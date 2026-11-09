@@ -20,3 +20,4 @@ reels/*/audio/vo_kokoro.wav
 reels/*/audio/mix.wav
 reels/*/*.mp4
 reels/*/poyais_voice_preview.mp3
+reels/*/*_voice_preview.mp3

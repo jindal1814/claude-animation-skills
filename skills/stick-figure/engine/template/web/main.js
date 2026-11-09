@@ -20,7 +20,8 @@ const CHUNKS = (() => {
   const ch = []; let cur = null;
   WORDS.forEach((w, i) => {
     const prev = WORDS[i - 1];
-    const brk = !cur || cur.words.length >= 2 || (cur.text + ' ' + w.w).replace(/\p{M}/gu, '').length > 13 || /[.,?!\u0964\u2026]$/.test(prev ? prev.w : '') || (prev && prev.line !== w.line);
+    const CS = window.CAP_STYLE;
+    const brk = !cur || cur.words.length >= (CS ? CS.maxWords || 3 : 2) || (CS && /[.,?!:\u2026"]$/.test(prev ? prev.w : '')) || (!CS && (cur.text + ' ' + w.w).replace(/\p{M}/gu, '').length > 13) || /[.,?!\u0964\u2026]$/.test(prev ? prev.w : '') || (prev && prev.line !== w.line);
     if (brk) { cur = { words: [w], text: w.w, s: w.s, e: w.e }; ch.push(cur); } else { cur.words.push(w); cur.text += ' ' + w.w; cur.e = w.e; }
   });
   ch.forEach((c, i) => { const n = ch[i + 1]; c.e = n && n.s - c.e < .5 ? n.s : c.e + .25; });
@@ -31,12 +32,36 @@ const CAP_FONT = window.CAP_FONT || 'Poppins';
 const capText = s => s.toLowerCase().replace(/[-\u2013\u2014]/g, ' ').replace(/[^\p{L}\p{M}\p{N}% ]/gu, '').replace(/\s+/g, ' ').trim();
 function drawCaption(ctx, t) {
   if (window.NO_CAPTIONS) return;
+  if (window.CAP_STYLE) return drawCaptionStyled(ctx, t, window.CAP_STYLE);
   const c = CHUNKS.find(c => t >= c.s && t < c.e); if (!c) return;
   const k = clamp((t - c.s) / .1); const sc = .82 + .18 * backOut(k);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(540, 1345); ctx.scale(sc, sc);
   ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 5;
   text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 13, CAP_FONT, 700);
   ctx.shadowColor = 'transparent'; text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 0, CAP_FONT, 700);
+  ctx.restore();
+}
+// CAP_STYLE: {maxWords, y, size, outline, maxWidth, yellow(word, index)} — the words exactly as written (case and
+// punctuation kept), revealed one by one inside each 1-3 word chunk, with names and numbers in yellow
+function drawCaptionStyled(ctx, t, CS) {
+  const c = CHUNKS.find(c => t >= c.s && t < c.e); if (!c) return;
+  const shown = c.words.filter((w, k) => k === 0 || t >= w.s);
+  const last = shown[shown.length - 1]; const k = clamp((t - last.s) / .08); const sc = .9 + .1 * backOut(k);
+  let size = CS.size || 72; const gap = size * .28;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const meas = () => { ctx.font = `800 ${size}px ${CS.font || CAP_FONT}`; return shown.map(w => ctx.measureText(w.w).width); };
+  let ws = meas(); let tot = ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1);
+  const maxW = CS.maxWidth || 800; if (tot > maxW) { size *= maxW / tot; ws = meas(); tot = ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1); }
+  ctx.translate(CS.x || 540, CS.y || 1280); ctx.scale(sc, sc);
+  let x = -tot / 2;
+  shown.forEach((w, i) => {
+    const idx = WORDS.indexOf(w); const col = CS.yellow && CS.yellow(w.w, idx) ? '#ffd23a' : '#fff';
+    ctx.font = `800 ${size}px ${CS.font || CAP_FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+    ctx.lineWidth = CS.outline || 7; ctx.strokeStyle = '#000'; ctx.strokeText(w.w, x, 0);
+    ctx.shadowColor = 'transparent'; ctx.fillStyle = col; ctx.fillText(w.w, x, 0);
+    x += ws[i] + gap;
+  });
   ctx.restore();
 }
 function renderShot(ctx, i, t) {
@@ -75,6 +100,7 @@ function renderFrame(f) {
   out.globalCompositeOperation = 'overlay'; out.globalAlpha = .07; const gr = grains[f % 4]; const pat = out.createPattern(gr, 'repeat'); out.fillStyle = pat; out.translate((f * 37) % 256, (f * 91) % 256); out.fillRect(-256, -256, W + 512, H + 512);
   out.restore();
   drawCaption(out, tNew);
+  if (window.OVERLAY) { out.save(); out.setTransform(1, 0, 0, 1, 0, 0); window.OVERLAY(out, tNew); out.restore(); } // e.g. a title card over the first seconds
 }
 window.renderFrame = renderFrame; window.TOTAL_FRAMES = TOTAL_FRAMES; window.DUR = DUR;
 window.grab = (q = .93) => canvas.toDataURL('image/jpeg', q);

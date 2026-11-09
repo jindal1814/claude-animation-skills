@@ -7,7 +7,7 @@ const FT = .3; // crossfade length for tr: 'fade' (the outgoing shot keeps playi
 const WARP = window.WARP || null;
 function warpMap(x, from, to) { const A = WARP.anchors; if (x <= A[0][from]) return x - A[0][from] + A[0][to]; for (let i = 0; i < A.length - 1; i++) if (x <= A[i + 1][from]) { const k = (x - A[i][from]) / (A[i + 1][from] - A[i][from]); return A[i][to] + k * (A[i + 1][to] - A[i][to]); } const L = A[A.length - 1]; return x - L[from] + L[to]; }
 const toOld = t => WARP ? warpMap(t, 1, 0) : t, toNew = t => WARP ? warpMap(t, 0, 1) : t;
-const DUR = WARP ? WARP.new_end + 0.6 : SHOTS[SHOTS.length - 1].end;
+const DUR = WARP ? WARP.new_end + (window.END_PAD != null ? window.END_PAD : 0.6) : SHOTS[SHOTS.length - 1].end; // END_PAD: seconds after the last word (0.1 for a video that loops)
 window.SHOT_SPANS = SHOTS.map((s, i) => [toNew(s.start), i === SHOTS.length - 1 ? DUR : toNew(s.end)]);
 const TOTAL_FRAMES = Math.round(DUR * FPS);
 

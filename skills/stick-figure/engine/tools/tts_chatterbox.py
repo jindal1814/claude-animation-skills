@@ -1,7 +1,8 @@
 """Default narrator: Chatterbox Turbo (Resemble AI, MIT licence), free and local, in the voice of kit/voices/narrator_ref.wav.
 
 Run from a reel folder with kit/.venv-chatterbox/bin/python:  tts_chatterbox.py [out.wav]
-Reads script.json (one entry per line), writes audio/vo_chatterbox.wav (default), one line at a time so long scripts
+Reads script.json (one entry per line; if script_tts.json exists, that is read instead: the same lines respelled for
+pronunciation, e.g. "Yoo-DHISH-thi-ra", while captions keep script.json's spelling), writes audio/vo_chatterbox.wav (default), one line at a time so long scripts
 stay stable. About 2 to 3 s of compute per second of speech on a 4-core CPU.
 Options (environment): NARRATOR_REF (a 7-15 s clean speech clip to copy the voice from), TARGET_WPS (e.g. 3.7: closes
 long pauses, then speeds up gently, at most 1.2x, if the read is still slower), GAP (seconds between lines, default 0.12).
@@ -17,7 +18,8 @@ GAP = float(os.environ.get("GAP", 0.12))
 torch.set_num_threads(os.cpu_count() or 4)
 from chatterbox.tts_turbo import ChatterboxTurboTTS
 m = ChatterboxTurboTTS.from_pretrained(device="cuda" if torch.cuda.is_available() else "cpu")
-lines = json.load(open("script.json"))
+lines = json.load(open("script_tts.json" if os.path.exists("script_tts.json") else "script.json"))
+words = sum(len(l.split()) for l in json.load(open("script.json")))  # pace is measured on the script as written
 parts = []
 for i, line in enumerate(lines):
     w = m.generate(line, audio_prompt_path=REF).squeeze().cpu().numpy()
@@ -31,7 +33,6 @@ tmp = os.path.join(tempfile.mkdtemp(), "raw.wav"); sf.write(tmp, vo, m.sr)
 # close long pauses inside lines (keeps 0.12 s), then match the target pace if one is set
 filt = "silenceremove=stop_periods=-1:stop_duration=0.16:stop_threshold=-40dB:stop_silence=0.12"
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", filt, "-ar", "44100", "-ac", "1", OUT], check=True)
-words = sum(len(l.split()) for l in lines)
 dur = sf.info(OUT).duration
 target = float(os.environ.get("TARGET_WPS", 0) or 0)
 if target and words / dur < target:

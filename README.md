@@ -42,6 +42,8 @@ To update later, run `git pull && ./install.sh`.
 /plugin marketplace add artemnovitckii/claude-animation-skills
 /plugin install animation-skills@claude-animation-skills
 ```
+On an iPad, see [GETTING_STARTED.md](GETTING_STARTED.md#on-an-ipad-no-computer-needed): the skills run in Claude Code on the web.
+
 Plugin skills are namespaced (`/animation-skills:graph`). The git clone above is the route tested end to end.
 
 ## Use

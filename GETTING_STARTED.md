@@ -11,7 +11,38 @@ Canvas/GSAP for 2D. A headless browser renders the frames on your computer, and 
 1080x1920 mp4. A skill is just a `SKILL.md` that tells Claude the steps, the rules and the files to edit, plus the engine
 code it edits. You bring a topic, and Claude does the script, voice, shots and render.
 
-## 1. Install (10 minutes, once)
+## On an iPad (no computer needed)
+
+An iPad can't run ffmpeg, Node or a headless browser. **Claude Code on the web** can, in a cloud machine, and you
+drive it from the **Claude app** or Safari at **claude.ai/code**. Claude writes the code, renders the video in the
+cloud and sends you the mp4. Checked in a cloud session on 2026-11-09: `/graph`, the `/zach-d-films` 3D engine (stills),
+the free Kokoro voice and the word timings all work.
+
+1. **Open Claude Code.** In the Claude app tap **Code** (or open claude.ai/code in Safari), and pick the repo
+   `jindal1814/claude-animation-skills`.
+2. **Pick the environment `claude-animation-skills`.** Its setup script runs `kit/setup.sh --voice` on every fresh
+   session, so the renderer, GSAP, HyperFrames and the voice models (~1 GB, about a minute) are ready before you type.
+   Without it, start the session with: *"Run `bash kit/setup.sh --voice` first."*
+3. **Use the skills the same way.** They load from the repo's `.claude/skills/` automatically. Type
+   `/graph 0 to 100K followers…`, `/zach-d-films could armour stop an arrow?` and so on. Add *"send me the mp4 when
+   it's done"*.
+4. **Get the video.** Claude sends the mp4 into the chat. Tap it, then **Share → Save Video** to put it in Photos and
+   post it from there. To keep project files (scripts, shots) for later, ask Claude to commit them to a branch; the
+   cloud machine is wiped when the session ends.
+5. **Your own voice (optional).** Record in Voice Memos and attach the file in the chat. Claude converts it
+   with ffmpeg and times everything to it.
+
+What's different in the cloud:
+- **There's no GPU.** 3D renders use software WebGL (`GL=swiftshader`), about 3-4 s a frame. A 30 s `/zach-d-films`
+  short at 30 fps (900 frames) takes roughly an hour, so render stills first and the full video once. The 2D quick
+  skills still take seconds.
+- **You can't watch a live preview** (`index.html`). Ask for stills or the contact sheet instead; they show up in
+  the chat.
+- **Keep the session open** while a long render runs. If it's idle too long, the machine is reclaimed.
+- cartoon-3d-short (section 4) is a poor fit for the iPad: it needs Remotion, downloaded 3D models and ~1.3 GB of
+  temp space per bundle.
+
+## 1. Install on a Mac or Linux computer (10 minutes, once)
 
 You need macOS or Linux with **ffmpeg**, **Node.js 18+**, **Python 3.9+** and Claude Code.
 
@@ -25,10 +56,9 @@ cd ~/claude-animation-skills && ./install.sh # links the skills into ~/.claude/s
 Restart Claude Code. The skills then show up as `/graph`, `/minimalistic-graphics`, `/map-route`, `/breakdown`,
 `/stick-figure` and `/zach-d-films`.
 
-> Checked in a cloud sandbox on 2026-11-09: `/graph` rendered a 4 s video in 6.8 s. If `setup.sh` fails on the
-> Playwright or GSAP download, your network is blocking `playwright.azureedge.net` or `cdnjs.cloudflare.com`. Use
-> `npm i gsap@3.12.5` and copy `node_modules/gsap/dist/gsap.min.js` to `kit/vendor/`, or point Playwright at a Chrome
-> you already have.
+> If `setup.sh` fails on the
+> Playwright download, your network is blocking `playwright.azureedge.net`: point `CHROME=/path/to/chrome` at a
+> Chrome you already have (GSAP falls back to npm on its own when `cdnjs.cloudflare.com` is blocked).
 
 ## 2. Your first five videos, easiest first
 

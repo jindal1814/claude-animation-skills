@@ -136,7 +136,7 @@ function bond(ctx, x, y, s, rot = 0, stamp = 0) {
 function banknote(ctx, x, y, s, rot = 0) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
   rrect(ctx, -180, -90, 360, 180, 10); fillStroke(ctx, '#bfe3c0', 7); rrect(ctx, -160, -72, 320, 144, 6); fillStroke(ctx, null, 4, '#3f8a52');
-  circle(ctx, -95, 0, 48); fillStroke(ctx, '#e8f5e0', 5, '#3f8a52'); star5(ctx, -95, 0, 30, 0, '#e8b23a');
+  circle(ctx, -95, 0, 48); fillStroke(ctx, '#e8f5e0', 5, '#3f8a52'); text(ctx, '1', -95, 2, 60, '#2f6a3e', INK, 0, 'Lora', 700);
   text(ctx, 'POYAIS', 55, -25, 36, '#2f6a3e', INK, 0, 'Lora', 700); text(ctx, 'DOLLAR', 55, 25, 28, '#2f6a3e', INK, 0, 'Lora', 700);
   ctx.restore();
 }
@@ -242,3 +242,30 @@ function cathedral(ctx, light, t) {
   circle(ctx, 540, 720, 70); fillStroke(ctx, '#e8b23a', 8);
 }
 function coffin(ctx, x, y, s) { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); path(ctx, [[-240, -40], [-180, -90], [200, -90], [260, -40], [200, 20], [-180, 20]]); fillStroke(ctx, '#5a3420', 8); rrect(ctx, -150, -75, 280, 30, 6); fillStroke(ctx, '#c22a2a', 5); ctx.restore(); }
+
+function sickInTent(ctx, x, y, s, t, k = 1) { // a settler lying under a blanket with fever: sweating, shivering
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  path(ctx, [[-260, 0], [0, -300], [260, 0]]); fillStroke(ctx, '#d9cfa8', 8); path(ctx, [[-200, 0], [0, -240], [200, 0]]); ctx.fillStyle = '#5a4a3a'; ctx.fill();
+  rrect(ctx, -170, -60, 340, 60, 20); fillStroke(ctx, '#8a7a5a', 7);
+  const sh = Math.sin(t * 40) * 3 * k;
+  circle(ctx, -120 + sh, -80, 52); fillStroke(ctx, mix('#f6f2ea', '#b8d8a0', k), 7);
+  ctx.beginPath(); ctx.arc(-138 + sh, -86, 9, .2, Math.PI - .2); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke(); ctx.beginPath(); ctx.arc(-102 + sh, -86, 9, .2, Math.PI - .2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(-120 + sh, -50, 12, Math.PI + .5, -.5); ctx.stroke();
+  rrect(ctx, -90, -110, 260, 70, 30); fillStroke(ctx, '#7a4a4a', 7);
+  ctx.restore();
+  sweat(ctx, x - 70 * s, y - 150 * s, 22 * s * 2, k); sweat(ctx, x - 190 * s, y - 130 * s, 16 * s * 2, k);
+}
+function grave(ctx, x, y, s, k) {
+  if (k <= 0) return; const e = backOut(clamp(k));
+  ctx.save(); ctx.translate(x, y); ctx.scale(s * e, s * e);
+  ellipse(ctx, 0, 6, 70, 14); ctx.fillStyle = 'rgba(60,40,30,.35)'; ctx.fill();
+  rrect(ctx, -10, -120, 20, 126, 4); fillStroke(ctx, '#8a6a4a', 6); rrect(ctx, -45, -95, 90, 18, 4); fillStroke(ctx, '#8a6a4a', 6);
+  ctx.restore();
+}
+function bigFigure(ctx, label, value, x, y, a = 1) { // a stark on-screen figure, e.g. AT LEAST / 180
+  if (a <= 0) return; ctx.save(); ctx.globalAlpha = clamp(a);
+  rrect(ctx, x - 250, y - 150, 500, 280, 24); ctx.fillStyle = 'rgba(15,10,20,.72)'; ctx.fill();
+  text(ctx, label, x, y - 90, 46, '#e8e2d2', INK, 0, 'Poppins', 700);
+  text(ctx, value, x, y + 30, 150, '#ff5a4a', INK, 0, 'Poppins', 700);
+  ctx.restore();
+}

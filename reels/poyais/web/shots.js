@@ -55,7 +55,7 @@ SHOTS.push({ start: 16.16, end: 20.76, tr: 'cut', draw(ctx, lt, t) {
 SHOTS.push({ start: 20.76, end: 24.32, tr: 'cut', draw(ctx, lt, t) {
   const hh = handheld(t, 3); const cam = { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 };
   applyCam(ctx, cam, 1); bankFront(ctx, 'day', t);
-  for (let i = 0; i < 6; i++) person(ctx, SETTLERS[i % 5], { x: 140 + i * 115, y: 1560 + (i % 2) * 20, s: 360, flip: -1, face: { eyes: 'normal', look: [-.6, 0], mouth: 'smile' }, legs: walkLegs(t + i, 3, .1) });
+  for (let i = 0; i < 6; i++) person(ctx, SETTLERS[i % 5], { x: 140 + i * 115, y: 1450 + (i % 2) * 15, s: 330, flip: -1, face: { eyes: 'normal', look: [-.6, 0], mouth: 'smile' }, legs: walkLegs(t + i, 3, .1) });
   priceBoard(ctx, 830, 1080, .95, clamp((lt - at(23.6, 20.76)) * 3), t);
 } });
 // 6 Escalation (Day): a respected London bank sells £200,000 of Poyais bonds
@@ -74,7 +74,7 @@ SHOTS.push({ start: 27.56, end: 31.76, tr: 'cut', draw(ctx, lt, t) {
   applyCam(ctx, cam, 1); londonStreet(ctx, 'golden', t);
   if (lt < shoe - .2) {
     rrect(ctx, 240, 1280, 600, 60, 8); fillStroke(ctx, '#6b3e22', 8); rrect(ctx, 300, 1230, 300, 60, 4); fillStroke(ctx, '#f6ecd2', 5);
-    for (let i = 0; i < 7; i++) { const x = 100 + i * 140, dy = (i % 2) * 40; person(ctx, SETTLERS[i % 5], { x, y: 1700 + dy, s: 380 - dy, face: { eyes: 'normal', look: [0, -.4], mouth: 'smile' } }); }
+    for (let i = 0; i < 7; i++) { const x = 100 + i * 140, dy = (i % 2) * 40; person(ctx, SETTLERS[i % 5], { x, y: 1820 + dy, s: 380 - dy, face: { eyes: 'normal', look: [0, -.4], mouth: 'smile' } }); }
     for (let i = 0; i < 5; i++) { const k = ((lt * 1.5 + i * .2) % 1); line(ctx, 330 + i * 50, 1250, 330 + i * 50 + 20, 1250 - k * 30, 5, '#2a2630'); }
   } else {
     person(ctx, COBBLER, { x: 540, y: 1760, s: 760, face: { eyes: 'happy', mouth: 'grin' }, arms: { L: [.3, -.1], R: { ik: [.18, -1.0] } } });
@@ -91,8 +91,8 @@ SHOTS.push({ start: 31.76, end: 35.12, tr: 'fade', draw(ctx, lt, t) {
   ctx.fillStyle = '#8a5a36'; ctx.fillRect(-900, -900, 2900, 3200);
   if (lt < pr - .1) {
     rrect(ctx, -100, 1050, 1300, 120, 8); fillStroke(ctx, '#6b3e22', 9);
-    person(ctx, SETTLERS[1], { x: 230, y: 1700, s: 560, face: { eyes: 'normal', look: [.8, -.3], mouth: 'smile' }, arms: { L: [.3, -.1], R: { ik: [.45, -.95] } } });
-    person(ctx, BANKER, { x: 860, y: 1700, s: 560, flip: -1, face: { eyes: 'half', look: [.8, -.2], mouth: 'smirk' }, arms: { L: [.3, -.1], R: { ik: [.45, -.95] } } });
+    person(ctx, SETTLERS[1], { x: 230, y: 1950, s: 560, face: { eyes: 'normal', look: [.8, -.3], mouth: 'smile' }, arms: { L: [.3, -.1], R: { ik: [.45, -.95] } } });
+    person(ctx, BANKER, { x: 860, y: 1950, s: 560, flip: -1, face: { eyes: 'half', look: [.8, -.2], mouth: 'smirk' }, arms: { L: [.3, -.1], R: { ik: [.45, -.95] } } });
     for (let i = 0; i < 5; i++) { const k = clamp(lt * 1.6 - i * .2); coin(ctx, lerp(380, 640, k) + i * 8, 1020 - Math.sin(k * Math.PI) * 120 - i * 14, 32); }
     for (let i = 0; i < 4; i++) { const k = clamp(lt * 1.6 - .5 - i * .2); banknote(ctx, lerp(720, 470, k), 960 - i * 30, .7, -.1 + i * .06); }
   } else {
@@ -118,7 +118,7 @@ SHOTS.push({ start: 37.12, end: 40.04, tr: 'cut', draw(ctx, lt, t) {
   for (let i = 0; i < 4; i++) {
     const x = 180 + i * 230, walkIn = clamp(lt * 1.2 - i * .15);
     const bag = (c, k, h) => { if (k === 'L') { rrect(c, h[0] - .07, h[1], .14, .1, .02); c.fillStyle = '#7a4a2a'; c.fill(); c.lineWidth = .01; c.strokeStyle = INK; c.stroke(); } };
-    person(ctx, SETTLERS[i], { x: x - (1 - walkIn) * 120, y: 1640, s: 460, prop: bag, legs: walkIn < 1 ? walkLegs(lt + i, 8, .4) : undefined,
+    person(ctx, SETTLERS[i], { x: x - (1 - walkIn) * 120, y: 1850, s: 460, prop: bag, legs: walkIn < 1 ? walkLegs(lt + i, 8, .4) : undefined,
       face: { eyes: lt > wait ? 'wide' : 'normal', look: [Math.sin(lt * 2 + i) * .9, -.2], mouth: lt > wait ? 'o' : 'flat', browUp: lt > wait ? 1 : 0 } });
   }
   if (lt > wait) { const k = backOut(clamp((lt - wait) * 3)); ctx.save(); ctx.translate(560, 700); ctx.scale(k, k); text(ctx, '?', 0, 0, 260, '#fff', INK, 18, 'Poppins', 700); ctx.restore(); }
@@ -131,8 +131,8 @@ SHOTS.push({ start: 40.04, end: 42.88, tr: 'fade', draw(ctx, lt, t) {
   rubble(ctx, 540, 1300, 1.6);
   const open = easeOut(clamp((lt - pull) * 2.5));
   for (const sd of [-1, 1]) { ctx.save(); ctx.translate(540 + sd * (60 + open * 480), 1250); for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(0, -80 + k * 70, 230, 70, sd * (.3 + k * .1), 0, TAU); fillStroke(ctx, ['#2f8a3e', '#3fa35b'][k % 2], 8); } ctx.restore(); }
-  person(ctx, SETTLERS[4], { x: 140, y: 1680, s: 480, face: { eyes: lt > pull + .3 ? 'wide' : 'normal', look: [.8, .3], mouth: lt > pull + .3 ? 'o' : 'flat' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
-  person(ctx, SETTLERS[2], { x: 940, y: 1680, s: 480, flip: -1, face: { eyes: lt > pull + .3 ? 'wide' : 'normal', look: [.8, .3], mouth: lt > pull + .3 ? 'frown' : 'flat' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
+  person(ctx, SETTLERS[4], { x: 140, y: 1870, s: 480, face: { eyes: lt > pull + .3 ? 'wide' : 'normal', look: [.8, .3], mouth: lt > pull + .3 ? 'o' : 'flat' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
+  person(ctx, SETTLERS[2], { x: 940, y: 1870, s: 480, flip: -1, face: { eyes: lt > pull + .3 ? 'wide' : 'normal', look: [.8, .3], mouth: lt > pull + .3 ? 'frown' : 'flat' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
 } });
 // 12 You see (Golden): a slick fake site next to a sloppy one; then the book, bonds and banknotes; nobody checked the country
 SHOTS.push({ start: 42.88, end: 50.0, tr: 'fade', draw(ctx, lt, t) {
@@ -144,8 +144,8 @@ SHOTS.push({ start: 42.88, end: 50.0, tr: 'fade', draw(ctx, lt, t) {
     const slick = at(44.3, 42.88);
     const a = clamp((lt - slick) * 3);
     browser(ctx, 300, 820, 420, 620, true); browser(ctx, 790, 860, 360, 520, false);
-    for (let i = 0; i < 6; i++) { const k = clamp(a - i * .12); drawStick(ctx, { x: 120 + i * 75, y: 1500, s: 220, cols: SETTLERS[i % 5].cols, hat: 'none', belt: false, face: { eyes: 'happy', mouth: 'grin' }, alpha: k }); }
-    drawStick(ctx, { x: 800, y: 1500, s: 220, cols: PAL.green, hat: 'none', belt: false, face: { eyes: 'half', mouth: 'flat', look: [.6, -.6] } });
+    for (let i = 0; i < 6; i++) { const k = clamp(a - i * .12); drawStick(ctx, { x: 120 + i * 75, y: 1660, s: 220, cols: SETTLERS[i % 5].cols, hat: 'none', belt: false, face: { eyes: 'happy', mouth: 'grin' }, alpha: k }); }
+    drawStick(ctx, { x: 800, y: 1660, s: 220, cols: PAL.green, hat: 'none', belt: false, face: { eyes: 'half', mouth: 'flat', look: [.6, -.6] } });
   } else {
     const l2 = lt - stack;
     guideBook(ctx, 540, 1020 - 0, .55, 0);
@@ -156,19 +156,26 @@ SHOTS.push({ start: 42.88, end: 50.0, tr: 'fade', draw(ctx, lt, t) {
   }
   goldenGrade(ctx, .8);
 } });
-// 13 Snap (Golden, dark): tents in heavy rain; lights go out; a small boat sails home almost empty
+// 13 Snap (Golden, dark): fever in the tents; graves fill the beach — at least 180 die; fewer than 50 get home
 SHOTS.push({ start: 50.0, end: 54.24, tr: 'fade', draw(ctx, lt, t) {
-  const boat = at(52.8, 50.0);
+  const die = at(51.2, 50.0), boat = at(52.8, 50.0);
   const hh = handheld(t, 3); const cam = { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 };
   applyCam(ctx, cam, 1);
-  if (lt < boat) {
-    jungle(ctx, 'golden', t, { seed: 9 });
-    for (let i = 0; i < 6; i++) { const out = clamp((lt - .9 - i * .25) * 3); tent(ctx, 130 + i * 165, 1390 + (i % 2) * 70, .9, 1 - out); }
-    tint(ctx, '#1a1830', .45); rain(ctx, t, 1);
+  if (lt < die) {
+    jungle(ctx, 'golden', t, { seed: 9 }); tint(ctx, '#1a1830', .35);
+    sickInTent(ctx, 300, 1300, 1.0, t, 1); sickInTent(ctx, 800, 1360, .85, t + 1, 1);
+    rain(ctx, t, 1);
+  } else if (lt < boat) {
+    jungle(ctx, 'golden', t, { seed: 9 }); tint(ctx, '#1a1830', .45);
+    const n = 30; for (let i = 0; i < n; i++) { const r = Math.floor(i / 6), c = i % 6; grave(ctx, 120 + c * 168 + (r % 2) * 50, 1240 + r * 95, .8 + r * .12, (lt - die) * 3 - i * .05); }
+    const cnt = Math.round(kf(lt, [[die, 0], [die + 1.0, 180]], easeOut));
+    bigFigure(ctx, 'AT LEAST', String(cnt), 540, 640, clamp((lt - die) * 4));
+    rain(ctx, t, .8);
   } else {
     harbour(ctx, 'golden', t); tint(ctx, '#2a2040', .35);
     sailShip(ctx, 420 + (lt - boat) * 40, 1130, .5, t, { ph: 2 });
     drawStick(ctx, { x: 400 + (lt - boat) * 40, y: 1090, s: 110, cols: PAL.blue, hat: 'none', belt: false, shadow: false, face: { eyes: 'half', mouth: 'frown' } });
+    bigFigure(ctx, 'FEWER THAN', '50', 540, 560, clamp((lt - boat) * 4));
     rain(ctx, t, .6);
   }
   goldenGrade(ctx, .6);
@@ -183,8 +190,8 @@ SHOTS.push({ start: 54.24, end: 57.84, tr: 'fade', draw(ctx, lt, t) {
   gavel(ctx, 640, 760, 1, lt > bang - .2 && lt < bang ? -.9 : (lt > bang ? 0 : -.3));
   const free = lt > bang + .15;
   const mx = free ? 380 + (lt - bang - .15) * 260 : 380;
-  person(ctx, MAC, { x: mx, y: 1640, s: 520, face: { eyes: free ? 'happy' : 'normal', look: [.6, -.3], mouth: free ? 'grin' : 'flat' }, legs: free ? walkLegs(lt, 7, .4) : undefined, arms: free ? { L: [.3, -.1], R: { ik: [.08, -1.05] } } : { L: [.3, -.1], R: [.3, -.1] } });
-  if (!free) person(ctx, GENDARME, { x: 170, y: 1640, s: 520, face: { eyes: 'normal', look: [.8, 0], mouth: 'smirk' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
+  person(ctx, MAC, { x: mx, y: 1910, s: 520, face: { eyes: free ? 'happy' : 'normal', look: [.6, -.3], mouth: free ? 'grin' : 'flat' }, legs: free ? walkLegs(lt, 7, .4) : undefined, arms: free ? { L: [.3, -.1], R: { ik: [.08, -1.05] } } : { L: [.3, -.1], R: [.3, -.1] } });
+  if (!free) person(ctx, GENDARME, { x: 170, y: 1910, s: 520, face: { eyes: 'normal', look: [.8, 0], mouth: 'smirk' }, arms: { L: [.3, -.1], R: { ik: [.42, -.6] } } });
 } });
 // 15 Callback (Golden): a military salute at a cathedral; the old map blows away like loose paper
 SHOTS.push({ start: 57.84, end: 63.95, tr: 'cut', draw(ctx, lt, t) {
@@ -192,7 +199,8 @@ SHOTS.push({ start: 57.84, end: 63.95, tr: 'cut', draw(ctx, lt, t) {
   const hh = handheld(t, 2); const cam = { x: 540 + hh[0], y: kf(lt, [[0, 1000], [blow, 1000], [6, 820]]) + hh[1], z: kf(lt, [[0, 1.0], [6, 1.1]]), r: 0 };
   applyCam(ctx, cam, 1); cathedral(ctx, 'golden', t);
   coffin(ctx, 540, 1420, 1.0);
-  for (const [x, f] of [[160, 1], [920, -1]]) person(ctx, SOLDIER, { x, y: 1600, s: 460, flip: f, face: { eyes: 'normal', look: [.6, 0], mouth: 'flat' }, arms: { L: [.3, -.1], R: { ik: [.1, -.82] } } });
+  { const k = backOut(clamp((lt - at(57.9, 57.84)) * 3)); ctx.save(); ctx.translate(540, 470); ctx.scale(k, k); rrect(ctx, -170, -70, 340, 140, 16); fillStroke(ctx, '#2a3a2e', 8); text(ctx, '1845', 0, 4, 96, '#f3d27a', INK, 0, 'Lora', 700); ctx.restore(); }
+  for (const [x, f] of [[160, 1], [920, -1]]) person(ctx, SOLDIER, { x, y: 1860, s: 460, flip: f, face: { eyes: 'normal', look: [.6, 0], mouth: 'flat' }, arms: { L: [.3, -.1], R: { ik: [.1, -.82] } } });
   const k = clamp((lt - blow) / 2);
   ctx.save(); ctx.translate(540 + k * 700, 1180 - k * 900); ctx.rotate(k * 5); ctx.scale(1 - k * .4, 1 - k * .4); bigMap(ctx, 0, 0, 420, 300, 1); ctx.restore();
   goldenGrade(ctx);

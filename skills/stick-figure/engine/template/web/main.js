@@ -18,21 +18,22 @@ const CHUNKS = (() => {
   const ch = []; let cur = null;
   WORDS.forEach((w, i) => {
     const prev = WORDS[i - 1];
-    const brk = !cur || cur.words.length >= 2 || (cur.text + ' ' + w.w).length > 13 || /[.,?!]$/.test(prev ? prev.w : '') || (prev && prev.line !== w.line);
+    const brk = !cur || cur.words.length >= 2 || (cur.text + ' ' + w.w).replace(/\p{M}/gu, '').length > 13 || /[.,?!\u0964\u2026]$/.test(prev ? prev.w : '') || (prev && prev.line !== w.line);
     if (brk) { cur = { words: [w], text: w.w, s: w.s, e: w.e }; ch.push(cur); } else { cur.words.push(w); cur.text += ' ' + w.w; cur.e = w.e; }
   });
   ch.forEach((c, i) => { const n = ch[i + 1]; c.e = n && n.s - c.e < .5 ? n.s : c.e + .25; });
   return ch;
 })();
-// caption style: all lowercase, no punctuation (hyphens become spaces; letters, digits and % stay)
-const capText = s => s.toLowerCase().replace(/[-\u2013\u2014]/g, ' ').replace(/[^\p{L}\p{N}% ]/gu, '').replace(/\s+/g, ' ').trim();
+// caption style: all lowercase, no punctuation (hyphens become spaces; letters, accents/vowel signs, digits and % stay)
+const CAP_FONT = window.CAP_FONT || 'Poppins';
+const capText = s => s.toLowerCase().replace(/[-\u2013\u2014]/g, ' ').replace(/[^\p{L}\p{M}\p{N}% ]/gu, '').replace(/\s+/g, ' ').trim();
 function drawCaption(ctx, t) {
   const c = CHUNKS.find(c => t >= c.s && t < c.e); if (!c) return;
   const k = clamp((t - c.s) / .1); const sc = .82 + .18 * backOut(k);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(540, 1345); ctx.scale(sc, sc);
   ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 5;
-  text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 13, 'Poppins', 700);
-  ctx.shadowColor = 'transparent'; text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 0, 'Poppins', 700);
+  text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 13, CAP_FONT, 700);
+  ctx.shadowColor = 'transparent'; text(ctx, capText(c.text), 0, 0, 70, '#fff', '#111', 0, CAP_FONT, 700);
   ctx.restore();
 }
 function renderShot(ctx, i, t) {

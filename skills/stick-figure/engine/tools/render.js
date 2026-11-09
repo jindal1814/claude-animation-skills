@@ -12,7 +12,7 @@ const fs = require('fs');
   page.on('console', m => console.log('[page]', m.text()));
   page.on('pageerror', e => console.log('[err]', e.message));
   await page.goto('file://' + process.cwd() + '/web/index.html');
-  await page.evaluate(async () => { await document.fonts.load('700 40px Poppins'); await document.fonts.load('700 40px Lora'); await document.fonts.load('600 40px Lora'); });
+  await page.evaluate(async () => { await document.fonts.load('700 40px Poppins'); await document.fonts.load('700 40px Lora'); await document.fonts.load('600 40px Lora'); await Promise.all([...document.fonts].map(f => f.load().catch(() => {}))); });
   const total = await page.evaluate(() => window.TOTAL_FRAMES);
   if (mode === 'stills') {
     const times = process.argv[3].split(',').map(Number);

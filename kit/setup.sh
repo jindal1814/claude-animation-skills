@@ -14,13 +14,21 @@ PY=$(command -v python3) || { echo "python3 is missing"; exit 1; }
 
 say "installing three.js and Playwright into kit/node_modules"
 (cd "$KIT" && npm install --silent --no-audit --no-fund)
-say "installing Playwright's Chromium (the /zach-d-films and /stick-figure engines render with it)"
-(cd "$KIT" && npx --yes playwright install chromium >/dev/null)
+if [ -x /opt/pw-browsers/chromium ] || [ -n "${CHROME:-}" ]; then
+  say "using the Chromium already installed on this machine"
+else
+  say "installing Playwright's Chromium (the /zach-d-films and /stick-figure engines render with it)"
+  (cd "$KIT" && npx --yes playwright install chromium >/dev/null)
+fi
 
 mkdir -p "$KIT/vendor"
 if [ ! -s "$KIT/vendor/gsap.min.js" ]; then
   say "fetching GSAP"
-  curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -o "$KIT/vendor/gsap.min.js"
+  curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -o "$KIT/vendor/gsap.min.js" || {
+    echo "cdnjs is blocked here; taking GSAP from npm instead"
+    T=$(mktemp -d) && (cd "$T" && npm install --silent --no-audit --no-fund gsap@3.12.5 >/dev/null) \
+      && cp "$T/node_modules/gsap/dist/gsap.min.js" "$KIT/vendor/gsap.min.js" && rm -rf "$T"
+  }
 fi
 
 say "warming up HyperFrames (first run downloads it)"

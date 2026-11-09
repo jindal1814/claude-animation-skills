@@ -13,6 +13,8 @@ Skills for Claude Code that make animations for reels, with no footage needed. Y
 | `/breakdown` | **A 3D exploded view.** A phone comes apart layer by layer, and every part gets a leader line and a label. | `My phone, every part labelled` |
 | `/graph` | **A minimal line graph.** A smooth line draws itself, and one big number counts up with its tip. Black on white, or white on black. | `0 to 100K followers in 9 months` |
 
+**New here?** Read [GETTING_STARTED.md](GETTING_STARTED.md) for your first five videos, the story-short workflow and how [claude-animated-shorts](https://github.com/mromidev/claude-animated-shorts) fits in.
+
 See them moving: **[novitckii.com/resources/animation-skills](https://novitckii.com/resources/animation-skills/)**
 
 ## Install
@@ -40,6 +42,8 @@ To update later, run `git pull && ./install.sh`.
 /plugin marketplace add artemnovitckii/claude-animation-skills
 /plugin install animation-skills@claude-animation-skills
 ```
+On an iPad, see [GETTING_STARTED.md](GETTING_STARTED.md#on-an-ipad-no-computer-needed): the skills run in Claude Code on the web.
+
 Plugin skills are namespaced (`/animation-skills:graph`). The git clone above is the route tested end to end.
 
 ## Use

@@ -87,7 +87,7 @@ function park(ctx, light, t) { sky(ctx, light); drawCloud(ctx, 200 + t * 4, 220,
 function scoreboard(ctx, x, y, s, flip, t) {
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   rrect(ctx, -330, -200, 660, 330, 20); fillStroke(ctx, '#1d1a22', 10);
-  const cell = (cx, label, val, k) => { text(ctx, label, cx, -120, 50, '#e8e2d2', INK, 0, 'Poppins', 700); ctx.save(); ctx.translate(cx, 20); ctx.scale(1, Math.max(.02, Math.abs(Math.cos(Math.min(k, 1) * Math.PI)))); rrect(ctx, -110, -90, 220, 180, 12); fillStroke(ctx, '#2f2b38', 7); text(ctx, k < .5 ? '0' : val, 0, 5, 140, '#ffd23a', INK, 0, 'Poppins', 700); ctx.restore(); };
+  const cell = (cx, label, val, k) => { text(ctx, label, cx, -120, 50, '#e8e2d2', INK, 0, 'Poppins', 700); ctx.save(); ctx.translate(cx, 20); ctx.scale(1, Math.max(.02, Math.abs(Math.cos(Math.min(k, 1) * Math.PI)))); rrect(ctx, -110, -90, 220, 180, 12); fillStroke(ctx, '#2f2b38', 7); if (k >= .5) text(ctx, val, 0, 5, 140, '#ffd23a', INK, 0, 'Poppins', 700); ctx.restore(); };
   cell(-160, 'KYLE', '1', flip[0]); cell(160, 'KIPLING', '2', flip[1]);
   ctx.restore();
 }

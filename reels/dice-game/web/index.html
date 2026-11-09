@@ -6,11 +6,11 @@ body{margin:0;background:#000}</style></head><body>
 <canvas id="c"></canvas>
 <script>
 window.END_PAD = 0.1; // the video ends on the last word and loops back to its first frame
-const YELLOW = /^(yudhishthira|mahabharata|shakuni|draupadi|sebi|f&o|3|4|four|thirteen)$/i;
+const YELLOW = /^(sebi|f&o|3|4|four|thirteen)$/i;
 window.CAP_STYLE = { maxWords: 3, y: 1280, size: 74, outline: 7, maxWidth: 780,
   yellow: w => YELLOW.test(w.replace(/^["“]+|[.,?!:…"”]+$/g, '')) };
 window.OVERLAY = (ctx, t) => {
-  const end = 5.84, a = 1 - clamp((t - end) / .3); if (a <= 0) return;
+  const end = 3.28, a = 1 - clamp((t - end) / .3); if (a <= 0) return;
   ctx.globalAlpha = a;
   rrect(ctx, 540 - 165, 300, 330, 64, 32); ctx.fillStyle = '#b9822a'; ctx.fill();
   text(ctx, 'EPIC MONEY #1', 540, 333, 34, '#fff', '#000', 0, 'Poppins', 700);

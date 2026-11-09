@@ -11,3 +11,11 @@ __pycache__/
 skills/stick-figure/engine/template/seg/
 skills/stick-figure/engine/template/stills/
 skills/stick-figure/engine/template/silent.mp4
+reels/*/seg/
+reels/*/stills/
+reels/*/silent.mp4
+reels/*/qa_sheet.jpg
+reels/*/audio/line_*.wav
+reels/*/audio/vo_kokoro.wav
+reels/*/audio/mix.wav
+reels/*/*.mp4

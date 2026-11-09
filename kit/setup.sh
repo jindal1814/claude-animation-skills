@@ -3,6 +3,7 @@
 # fetches GSAP and warms up HyperFrames. Safe to run again.
 #   bash kit/setup.sh            # enough for /graph, /minimalistic-graphics, /map-route, /breakdown and the two engines' pictures
 #   bash kit/setup.sh --voice    # also makes kit/.venv with the free voice (Kokoro) and word timings (Parakeet), ~1 GB of models
+#   bash kit/setup.sh --narrator # also installs the default narrator, Chatterbox Turbo, in kit/.venv-chatterbox (~6 GB + 4 GB model)
 set -euo pipefail
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 say() { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -50,5 +51,14 @@ if [ "${1:-}" = "--voice" ] || [ "${1:-}" = "--stick" ]; then
     curl -fL -o "$M/p.tar.bz2" https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2
     (cd "$M" && tar xjf p.tar.bz2 && rm p.tar.bz2)
   fi
+fi
+if [ "${1:-}" = "--narrator" ] || [ "${2:-}" = "--narrator" ]; then
+  if [ ! -x "$KIT/.venv-chatterbox/bin/python" ]; then
+    say "installing the narrator (Chatterbox Turbo) into kit/.venv-chatterbox"
+    if command -v uv >/dev/null; then uv venv -q -p 3.11 "$KIT/.venv-chatterbox" && VIRTUAL_ENV="$KIT/.venv-chatterbox" uv pip install -q chatterbox-tts==0.1.7 "setuptools<81" soundfile
+    else python3.11 -m venv "$KIT/.venv-chatterbox" && "$KIT/.venv-chatterbox/bin/pip" install -q chatterbox-tts==0.1.7 "setuptools<81" soundfile; fi
+  fi
+  say "downloading the narrator model from Hugging Face (about 4 GB, once)"
+  "$KIT/.venv-chatterbox/bin/python" -c "from chatterbox.tts_turbo import ChatterboxTurboTTS as M; M.from_pretrained(device='cpu')" >/dev/null 2>&1 || echo "warning: could not download the narrator model; is huggingface.co reachable?"
 fi
 say "ready"

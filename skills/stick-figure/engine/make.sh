@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Build a stick-figure reel end to end: voice -> word timings -> music + SFX -> picture -> <reel>/<name>.mp4
-#   make.sh <reel-folder> [kokoro | elevenlabs | path/to/voiceover.mp3]
+#   make.sh <reel-folder> [chatterbox | kokoro | elevenlabs | path/to/voiceover.mp3]   (default narrator: chatterbox)
 # Examples:
-#   make.sh ~/reels/pirate                 # reuse the voice already in audio/ (or the free Kokoro take)
+#   make.sh ~/reels/pirate                 # reuse the voice already in audio/ (or make one with the default narrator)
+#   make.sh ~/reels/pirate chatterbox      # new take in the default narrator (Chatterbox Turbo, free, local)
 #   make.sh ~/reels/pirate kokoro          # new take in the free built-in voice
 #   make.sh ~/reels/pirate elevenlabs      # new ElevenLabs take (needs ELEVENLABS_API_KEY)
 #   make.sh ~/reels/pirate ~/take.mp3      # your own recording
@@ -19,9 +20,14 @@ export NODE_PATH="$KIT/node_modules"
 NAME="$(basename "$DIR")"
 cd "$DIR"; mkdir -p audio
 
+narrate() {  # default narrator: Chatterbox Turbo in kit/voices/narrator_ref.wav's voice, at TARGET_WPS (default 3.7)
+  [ -x "$KIT/.venv-chatterbox/bin/python" ] || bash "$KIT/setup.sh" --narrator
+  TARGET_WPS="${TARGET_WPS:-3.7}" "$KIT/.venv-chatterbox/bin/python" "$ENGINE/tools/tts_chatterbox.py" audio/vo_chatterbox.wav
+}
 echo "== voice: $VOICE"
 case "$VOICE" in
-  keep)       [ -f audio/vo.wav ] || { [ -f audio/vo_kokoro.wav ] || "$PY" "$ENGINE/tools/tts_kokoro.py"; cp audio/vo_kokoro.wav audio/vo.wav; } ;;
+  keep)       [ -f audio/vo.wav ] || { narrate; cp audio/vo_chatterbox.wav audio/vo.wav; } ;;
+  chatterbox) narrate; cp audio/vo_chatterbox.wav audio/vo.wav ;;
   kokoro)     "$PY" "$ENGINE/tools/tts_kokoro.py"; cp audio/vo_kokoro.wav audio/vo.wav ;;
   elevenlabs) "$PY" "$ENGINE/tools/tts_elevenlabs.py" audio/vo_el.mp3
               ffmpeg -v error -y -i audio/vo_el.mp3 -ac 1 -ar 44100 audio/vo.wav ;;

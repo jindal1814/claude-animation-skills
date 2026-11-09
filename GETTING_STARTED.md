@@ -29,7 +29,8 @@ the free Kokoro voice and the word timings all work.
 4. **Get the video.** Claude sends the mp4 into the chat. Tap it, then **Share → Save Video** to put it in Photos and
    post it from there. To keep project files (scripts, shots) for later, ask Claude to commit them to a branch; the
    cloud machine is wiped when the session ends.
-5. **Your own voice (optional).** Record in Voice Memos and attach the file in the chat. Claude converts it
+5. **The narrator.** New videos are voiced by Chatterbox Turbo, a free, open-source voice (MIT licence) that runs in the cloud session: no account or key. The first video in a fresh session installs it (about 5 minutes); after that a minute of narration takes about 2–3 minutes. It needs Hugging Face allowed in the environment's network (already done for `claude-animation-skills`).
+6. **Your own voice (optional).** Record in Voice Memos and attach the file in the chat. Claude converts it
    with ffmpeg and times everything to it.
 
 What's different in the cloud:

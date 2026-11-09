@@ -22,3 +22,4 @@ reels/*/*.mp4
 reels/*/poyais_voice_preview.mp3
 reels/*/*_voice_preview.mp3
 kit/.venv-*/
+voice_lineup.mp3

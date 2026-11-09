@@ -5,7 +5,9 @@
 #    "segs": [{"t": "text", "line": 0, "v": "hm_psi", "sp": 1.05, "pitch": 0.5, "fx": "whisper", "gap": 0.3,
 #              "breath": true, "gain": 1.0, "cap": "caption text, or \"\" to hide"}]}
 # fx: "whisper" (breathy, close), "deep" (pitched down, cavernous, for a giant or a spirit), "echo", "deepwhisper", or none.
-# Word times for the captions are spread over each segment by the length of its words.
+# Word times for the captions are spread over each segment by the length of its words. "cap" can be a different script
+# from the speech (e.g. Hinglish captions for Hindi narration); keep about one caption word per spoken word.
+#   tts_expressive.py voice.json --captions-only   re-times the captions from audio/lines.json without re-making the voice
 import json, os, sys, shutil, subprocess, tempfile, numpy as np, soundfile as sf
 from scipy import signal
 from kokoro_onnx import Kokoro, EspeakConfig
@@ -18,9 +20,23 @@ if len(data) > 100:  # espeak-ng fails on a long data path
     if not os.path.exists(os.path.join(short, "phontab")):
         shutil.rmtree(short, ignore_errors=True); shutil.copytree(data, short)
     data = short
+cfg = json.load(open(next((x for x in sys.argv[1:] if not x.startswith("--")), "voice.json")))
+def cap_words(segs, lines):
+    words = []
+    for i, (s, l) in enumerate(zip(segs, lines)):
+        ws = s.get("cap", s["t"]).split()
+        if not ws: continue
+        wt = np.array([len(w.strip("…,.!?।")) + 1.5 for w in ws], float); edges = np.concatenate([[0], np.cumsum(wt) / wt.sum()]) * l["dur"] * .97
+        for k, w in enumerate(ws): words.append({"w": w, "s": round(l["start"] + edges[k], 3), "e": round(l["start"] + edges[k + 1], 3), "line": s.get("line", i)})
+    json.dump(words, open("audio/words_new.json", "w"), indent=0, ensure_ascii=False)
+    open("web/words.js", "w").write("const WORDS=" + json.dumps(words, ensure_ascii=False) + ";")
+    open("web/warp.js", "w").write("window.WARP=null;")
+    return words
+if "--captions-only" in sys.argv:
+    lines = json.load(open("audio/lines.json")); assert len(lines) == len(cfg["segs"]), "voice.json has a different number of phrases than the recorded narration"
+    print(len(cap_words(cfg["segs"], lines)), "caption words re-timed"); sys.exit()
 K = Kokoro(os.path.join(KIT, "models/kokoro-v1.0.onnx"), os.path.join(KIT, "models/voices-v1.0.bin"),
            espeak_config=EspeakConfig(lib_path=espeakng_loader.get_library_path(), data_path=data))
-cfg = json.load(open(sys.argv[1] if len(sys.argv) > 1 else "voice.json"))
 SR = 24000
 rng = np.random.default_rng(7)
 TMP = tempfile.mkdtemp()
@@ -76,11 +92,6 @@ for i, s in enumerate(cfg["segs"]):
     x = rubber(x, s.get("pitch", 0) + rng.uniform(-.25, .25))
     voiced = len(x) / SR
     x = fx(x, s.get("fx")) * s.get("gain", 1.0)
-    cap = s.get("cap", s["t"])
-    ws = cap.split()
-    if ws:
-        wt = np.array([len(w.strip("…,.!?।")) + 1.5 for w in ws], float); edges = np.concatenate([[0], np.cumsum(wt) / wt.sum()]) * voiced * .97
-        for k, w in enumerate(ws): words.append({"w": w, "s": round(t + edges[k], 3), "e": round(t + edges[k + 1], 3), "line": s.get("line", i)})
     lines.append({"i": i, "text": s["t"], "start": round(t, 3), "dur": round(voiced, 3), "fx": s.get("fx", "")})
     gap = s.get("gap", .18)
     tail = max(0, len(x) - int((voiced + gap) * SR))  # reverb/echo tails overlap the next phrase
@@ -96,9 +107,7 @@ vo = vo / (np.max(np.abs(vo)) + 1e-9) * .9
 os.makedirs("audio", exist_ok=True)
 sf.write("audio/vo.wav", vo, SR)
 json.dump(lines, open("audio/lines.json", "w"), indent=1, ensure_ascii=False)
-json.dump(words, open("audio/words_new.json", "w"), indent=0, ensure_ascii=False)
-open("web/words.js", "w").write("const WORDS=" + json.dumps(words, ensure_ascii=False) + ";")
-open("web/warp.js", "w").write("window.WARP=null;")
+cap_words(cfg["segs"], lines)
 shutil.rmtree(TMP, ignore_errors=True)
 print(f"{len(cfg['segs'])} phrases, {len(vo) / SR:.2f}s")
 for l in lines: print(f"{l['start']:6.2f} {l['dur']:5.2f} {l['fx']:11s} {l['text']}")

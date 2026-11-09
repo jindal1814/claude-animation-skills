@@ -115,7 +115,7 @@ SHOTS.push({ start: 27.0, end: 33.32, tr: 'cut', draw(ctx, lt, t) {
   } else {
     hanuman(ctx, { x: px, y: 1500, s: 220, t, mace: 'L', arms: POSE.handsUp.arms, face: { eyes: 'wide', mouth: 'o' } });
   }
-  if (lt > eat) { const k = clamp((lt - eat) * 4); ctx.save(); ctx.translate(px + 230 - 70, 1500 - 600); ctx.scale(k, k); line(ctx, 0, 0, 40, -220, 14, '#c9c2d8'); ellipse(ctx, 46, -250, 30, 44, .2); fillStroke(ctx, '#c9c2d8', 8); ctx.restore(); devText(ctx, 'हम्म!', px - 230, 780, 70 * k, k, '#c9b6ff'); }
+  if (lt > eat) { const k = clamp((lt - eat) * 4); ctx.save(); ctx.translate(px + 230 - 70, 1500 - 600); ctx.scale(k, k); line(ctx, 0, 0, 40, -220, 14, '#c9c2d8'); ellipse(ctx, 46, -250, 30, 44, .2); fillStroke(ctx, '#c9c2d8', 8); ctx.restore(); devText(ctx, 'Hmm!', px - 230, 780, 70 * k, k, '#c9b6ff'); }
 } });
 // H — whisper: Hanuman just keeps chanting Ram... Ram... Ram...
 SHOTS.push({ start: 33.32, end: 39.83, tr: 'whip', draw(ctx, lt, t) {
@@ -125,7 +125,7 @@ SHOTS.push({ start: 33.32, end: 39.83, tr: 'whip', draw(ctx, lt, t) {
   glowDisk(ctx, 540, 900, 520, .25 + .1 * Math.sin(t * 2), '255,190,90');
   drawThali(ctx, 540, 1180, 420, { veg: true });
   hanuman(ctx, { x: 540, y: 1200, s: 560, t, mace: 'L', legs: { L: [1.4, -1.4], R: [1.4, -1.4] }, arms: folded(), face: { eyes: 'closed', mouth: 'smile' } });
-  [36.64, 37.65, 38.65].forEach((at, i) => { const k = lt - L(at, 33.32); if (k > 0) devText(ctx, 'राम', 540 + (i - 1) * 230, 560 - k * 140, 110, clamp(1.6 - k * .6)); });
+  [36.64, 37.65, 38.65].forEach((at, i) => { const k = lt - L(at, 33.32); if (k > 0) devText(ctx, 'Ram', 540 + (i - 1) * 230, 560 - k * 140, 110, clamp(1.6 - k * .6)); });
 } });
 // I — the King of Spirits roars: "Who are you?"
 SHOTS.push({ start: 39.83, end: 42.79, tr: 'whip', draw(ctx, lt, t) {

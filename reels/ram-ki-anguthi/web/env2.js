@@ -150,6 +150,6 @@ function ringPile(ctx, cx, cy, w, h, n, t, seed = 3, engr = false) {
 }
 function devText(ctx, str, x, y, size, a = 1, col = '#ffe7a0') {
   if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.shadowColor = 'rgba(255,200,80,.9)'; ctx.shadowBlur = size * .5;
-  text(ctx, str, x, y, size, col, INK, size * .08, 'Deva', 800); ctx.restore();
+  text(ctx, str, x, y, size, col, INK, size * .08, 'Poppins', 700); ctx.restore();
 }
 function glowDisk(ctx, x, y, r, a, col = '255,214,110') { if (a <= 0) return; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore(); }

@@ -7,8 +7,15 @@ vo = signal.resample_poly(vo, SR, vsr)
 W = json.load(open('audio/warp.json')) if __import__('os').path.exists('audio/warp.json') else None
 DUR = (W['new_end'] if W else len(vo) / SR) + 0.6; N = int(DUR * SR)
 rng = np.random.default_rng(11); T = lambda n: np.arange(n) / SR
-def place(buf, x, at, g=1.0):
-    i = int(at * SR); j = min(len(buf), i + len(x))
+def toNew(x):  # effect times are written against the first take; follow the current take's word timings
+    if not W: return x
+    A = W['anchors']
+    if x <= A[0][0]: return x - A[0][0] + A[0][1]
+    for k in range(len(A) - 1):
+        if x <= A[k + 1][0]: f = (x - A[k][0]) / (A[k + 1][0] - A[k][0]); return A[k][1] + f * (A[k + 1][1] - A[k][1])
+    return x - A[-1][0] + A[-1][1]
+def place(buf, x, at, g=1.0, raw=False):
+    i = int((at if raw else toNew(at)) * SR); j = min(len(buf), i + len(x))
     if 0 <= i < len(buf): buf[i:j] += x[:j - i] * g
 def bf(x, kind, f): b, a = signal.butter(2, (np.array(f) / (SR / 2)) if np.ndim(f) else f / (SR / 2), kind); return signal.lfilter(b, a, x)
 lp = lambda x, f: bf(x, 'low', f); hp = lambda x, f: bf(x, 'high', f); bp = lambda x, lo, hi: bf(x, 'band', [lo, hi])

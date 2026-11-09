@@ -2,7 +2,9 @@
 
 Run from a reel folder:  python3 <engine>/tools/tts_elevenlabs.py audio/vo_el.mp3
 Needs ELEVENLABS_API_KEY in the environment (or in a .env file in the reel folder).
-Optional: ELEVEN_VOICE_ID (default: Jeremy - Casual Guy Next Door), ELEVEN_MODEL, ELEVEN_STABILITY, ELEVEN_STYLE.
+Optional: ELEVEN_VOICE_ID (default: Jeremy - Casual Guy Next Door), ELEVEN_MODEL, ELEVEN_STABILITY, ELEVEN_STYLE,
+ELEVEN_SPEED (0.7 to 1.2, default 1.0; ElevenLabs' own pace control, more natural than speeding up the file).
+Popular social-media narrators: Brian nPczCjzI2devNBz1zQrb, Adam pNInz6obpgDQGcFmaJgB, Liam TX3LPaxmHKxFdv7VOQHJ.
 One take per run (about 1 credit per character on v2/v3/v4 models, about half on eleven_flash_v2_5).
 """
 import json, os, sys, urllib.request, urllib.error
@@ -29,6 +31,7 @@ body = json.dumps({
         'similarity_boost': 0.75,
         'style': float(os.environ.get('ELEVEN_STYLE', 0.3)),
         'use_speaker_boost': True,
+        'speed': float(os.environ.get('ELEVEN_SPEED', 1.0)),
     },
 }).encode()
 req = urllib.request.Request(

@@ -2,6 +2,8 @@
 const canvas = document.getElementById('c'); canvas.width = W; canvas.height = H;
 const out = canvas.getContext('2d');
 const buf = document.createElement('canvas'); buf.width = W; buf.height = H; const bctx = buf.getContext('2d');
+const buf2 = document.createElement('canvas'); buf2.width = W; buf2.height = H; const bctx2 = buf2.getContext('2d');
+const FT = .3; // crossfade length for tr: 'fade' (the outgoing shot keeps playing under the incoming one)
 const WARP = window.WARP || null;
 function warpMap(x, from, to) { const A = WARP.anchors; if (x <= A[0][from]) return x - A[0][from] + A[0][to]; for (let i = 0; i < A.length - 1; i++) if (x <= A[i + 1][from]) { const k = (x - A[i][from]) / (A[i + 1][from] - A[i][from]); return A[i][to] + k * (A[i + 1][to] - A[i][to]); } const L = A[A.length - 1]; return x - L[from] + L[to]; }
 const toOld = t => WARP ? warpMap(t, 1, 0) : t, toNew = t => WARP ? warpMap(t, 0, 1) : t;
@@ -28,6 +30,7 @@ const CHUNKS = (() => {
 const CAP_FONT = window.CAP_FONT || 'Poppins';
 const capText = s => s.toLowerCase().replace(/[-\u2013\u2014]/g, ' ').replace(/[^\p{L}\p{M}\p{N}% ]/gu, '').replace(/\s+/g, ' ').trim();
 function drawCaption(ctx, t) {
+  if (window.NO_CAPTIONS) return;
   const c = CHUNKS.find(c => t >= c.s && t < c.e); if (!c) return;
   const k = clamp((t - c.s) / .1); const sc = .82 + .18 * backOut(k);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(540, 1345); ctx.scale(sc, sc);
@@ -62,6 +65,10 @@ function renderFrame(f) {
   if (prev && prev.tr === 'whip' && t < s.start + WT) { const p = 1 - easeOut((t - s.start) / WT); dx = p * 420; blur = p * 260; }
   renderShot(bctx, i, t);
   blit(buf, dx, blur);
+  if (prev && prev.tr === 'fade' && t < s.start + FT) {
+    renderShot(bctx2, i - 1, t);
+    out.save(); out.setTransform(1, 0, 0, 1, 0, 0); out.globalAlpha = 1 - ease((t - s.start) / FT); out.drawImage(buf2, 0, 0); out.restore();
+  }
   // grade: vignette + grain
   out.save(); out.setTransform(1, 0, 0, 1, 0, 0);
   const g = out.createRadialGradient(540, 900, 500, 540, 960, 1250); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,5,20,.32)'); out.fillStyle = g; out.fillRect(0, 0, W, H);

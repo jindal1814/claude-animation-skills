@@ -32,7 +32,7 @@ Needs ffmpeg, Node and Python 3.9+. To see the example: `cp -r "$ENGINE/template
 A reel is one folder:
 - `script.json`: the voiceover, one sentence per entry.
 - `captions.json`: optional text swaps for captions (`{"twenty five": "25"}`).
-- `web/shots.js`: the shot list. Each shot is `SHOTS.push({start, end, tr, draw(ctx, lt, t)})` in seconds of the voiceover; `lt` is time inside the shot, `tr` is the transition out (`'whip'` or `'cut'`).
+- `web/shots.js`: the shot list. Each shot is `SHOTS.push({start, end, tr, draw(ctx, lt, t)})` in seconds of the voiceover; `lt` is time inside the shot, `tr` is the transition out (`'whip'`, `'cut'` or `'fade'`, a 0.3 s crossfade); set `window.NO_CAPTIONS = true` in `web/index.html` for a reel without captions.
 - `web/lib.js` (easing, keyframes `kf`, shapes, text), `web/chars.js` (the stick rig `drawStick`, hats, faces, arm IK, the eye patch), `web/env.js` (sky, clouds, sea, ships, deck, barrels, cannon, lantern, below deck), `web/main.js` (whip blur, vignette, grain, captions). Add new props to `env.js` or a new `env2.js` (list it in `web/index.html`).
 - `audio.py`: music and SFX, all synthesised in code and placed in voiceover seconds.
 

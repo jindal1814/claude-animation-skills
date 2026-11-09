@@ -102,7 +102,7 @@ vo = np.concatenate(out)
 for at, tl in cfg.get("_tails", []):
     i = int(at * SR); j = min(len(vo), i + len(tl)); vo[i:j] += tl[:j - i]
 # warm room on the whole read, so it doesn't sound like it was recorded in a vacuum
-vo = reverb(vo, .5, 9, .1, 5)[:len(vo)]
+if cfg.get("room", True): vo = reverb(vo, .5, 9, .1, 5)[:len(vo)]   # "room": false for a dry read
 vo = vo / (np.max(np.abs(vo)) + 1e-9) * .9
 os.makedirs("audio", exist_ok=True)
 sf.write("audio/vo.wav", vo, SR)

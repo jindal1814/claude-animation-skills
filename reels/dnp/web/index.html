@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Poppins;font-weight:700 800;src:url(fonts/Poppins-Bold.ttf)}
+@font-face{font-family:Lora;font-weight:400 700;src:url(fonts/Lora-Variable.ttf)}
+body{margin:0;background:#000}</style></head><body>
+<canvas id="c"></canvas>
+<script>
+window.END_PAD = 0.1;
+const YELLOW = /^(21-year-old|1am|jack|knapman|jack's|dnp|two|1930s|america|1938|2022)$/i;
+window.CAP_STYLE = { maxWords: 3, y: 1280, size: 74, outline: 7, maxWidth: 780,
+  yellow: w => YELLOW.test(w.replace(/^["“]+|[.,?!:…"”]+$/g, '')) };
+// title card: white with a soft glow, upper third, fading out as the second line starts
+window.OVERLAY = (ctx, t) => {
+  const end = 4.00, a = 1 - clamp((t - end) / .3); if (a <= 0) return;
+  ctx.globalAlpha = a; ctx.shadowColor = 'rgba(255,255,255,.55)'; ctx.shadowBlur = 28;
+  text(ctx, 'GYM DIET FILES #3', 540, 300, 38, '#fff', '#000', 0, 'Poppins', 700);
+  text(ctx, 'THE FAT BURNER', 540, 390, 84, '#fff', '#000', 0, 'Poppins', 800);
+  text(ctx, 'MADE FOR FACTORIES', 540, 480, 84, '#fff', '#000', 0, 'Poppins', 800);
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+};
+</script>
+<script src="lib.js"></script><script src="chars.js"></script><script src="env.js"></script><script src="env2.js"></script><script src="words.js"></script><script src="warp.js"></script><script src="shots.js"></script><script src="main.js"></script>
+</body></html>

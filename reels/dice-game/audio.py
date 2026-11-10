@@ -82,11 +82,51 @@ def boom(dur=2.0): n = int(dur * SR); t = T(n); return (np.sin(2 * np.pi * 40 * 
 def tap(): n = int(.03 * SR); return hp(rng.standard_normal(n), 3000) * np.exp(-T(n) * 200) * .6
 
 music = np.zeros(N); sfx = np.zeros(N)
-# score: a tanpura drone throughout (it starts already playing, so the loop joins), a drum pulse under the games
-tanpura(-0.62, DUR, .5)
-pulse(10.0, 15.6, .55); pulse(19.1, 24.6, .7)
-place(music, strings((38, 45, 50, 53), 3.6, .35), 15.7); place(music, strings((38, 44, 50), 5.6, .45), 20.6)
-place(music, strings((38, 45, 50, 53), 5.5, .35), 27.4); place(music, strings((38, 44, 50, 53), 5.8, .5), 35.8)
+# ---- score: Indian-cinematic trap groove, D minor (Bhairavi colour). 17 bars fill the video exactly, so it loops. ----
+BARS = 17; BEAT = DUR / (BARS * 4); S16 = BEAT / 4
+WAIT, SEBI, KING, EXILE = 22.96, 24.4, 30.88, 34.44
+def kick808(f=48, dur=.6): n = int(dur * SR); t = T(n); fr = f * (1 + 2.5 * np.exp(-t * 40)); return np.tanh(1.6 * np.sin(2 * np.pi * np.cumsum(fr) / SR) * np.exp(-t * 4.5))
+def clap(): n = int(.2 * SR); t = T(n); x = bp(rng.standard_normal(n), 900, 5000); e = sum(np.exp(-np.maximum(0, t - d) * 60) * (t >= d) for d in (0, .012, .024)); return x * e * .5
+def hat(open_=False): n = int((.18 if open_ else .05) * SR); t = T(n); return hp(rng.standard_normal(n), 7000) * np.exp(-t * (14 if open_ else 90)) * .35
+def tabla(kind):  # dha = low + ring, na = ringing high, ti = dry tap
+    n = int(.4 * SR); t = T(n)
+    ring = np.sin(2 * np.pi * 530 * t) * np.exp(-t * 9) + .4 * np.sin(2 * np.pi * 1060 * t) * np.exp(-t * 14)
+    low = np.sin(2 * np.pi * np.cumsum(95 * (1 + .6 * np.exp(-t * 18))) / SR) * np.exp(-t * 7)
+    if kind == 'dha': return (ring * .5 + low) * .5
+    if kind == 'na': return ring * .45
+    return bp(rng.standard_normal(n), 1500, 5000) * np.exp(-t * 80) * .4
+_sc = {}
+def sitar(m, dur=.6):
+    k = (m, dur)
+    if k not in _sc:
+        x = ks(midi(m), dur, .997); t = T(len(x)); x = x + .35 * np.tanh(5 * x) * np.exp(-t * 3)   # buzzy jawari bridge
+        _sc[k] = hp(x, 180) * np.exp(-t * 2.2) * .8
+    return _sc[k]
+def bass(m, dur): n = int(dur * SR); t = T(n); return np.tanh(1.4 * np.sin(2 * np.pi * midi(m) * t)) * np.minimum(1, t / .01) * np.exp(-t * 1.2) * .7
+ROOTS = [38, 34, 36, 33]                 # D, Bb, C, A
+HOOK = [(0, 62), (.5, 63), (1, 65), (1.5, 67), (2, 69), (3, 67), (3.5, 65)]          # D Eb F G A G F
+ANSWER = [(0, 70), (.5, 69), (1, 67), (2, 65), (2.5, 63), (3, 62)]                   # Bb A G F Eb D
+TABLA = ['dha', 'ti', 'na', 'ti', 'dha', 'dha', 'na', 'ti']
+for bar in range(BARS):
+    t0 = bar * 4 * BEAT
+    drop = WAIT - .1 <= t0 < SEBI + 2.4       # breakdown for "Wait..." and the start of "You see"
+    big = EXILE - 4 * BEAT <= t0 < EXILE + 4 * BEAT
+    root = ROOTS[bar % 4]
+    place(music, bass(root, 4 * BEAT * .95), t0, .9 if not drop else .35, raw=True)
+    if not drop:
+        for b16 in (0, 6, 10) if bar % 2 else (0, 7, 8, 11):
+            place(music, kick808(), t0 + b16 * S16, 1.0, raw=True)
+        for b in (1, 3): place(music, clap(), t0 + b * BEAT, 1.0, raw=True)
+        for k in range(8): place(music, hat(k == 7 and bar % 2 == 1), t0 + k * 2 * S16, 1.0, raw=True)
+        if bar % 4 == 3:                   # trap hat roll into the next bar
+            for k in range(8): place(music, hat(), t0 + 3 * BEAT + k * S16 / 2, .7, raw=True)
+        for k, bol in enumerate(TABLA): place(music, tabla(bol), t0 + k * 2 * S16, .9 if big else .7, raw=True)
+    phrase = HOOK if bar % 2 == 0 else ANSWER
+    for (bt, m) in phrase: place(music, sitar(m + (12 if big else 0), .7), t0 + bt * BEAT, .55 if drop else .7, raw=True)
+tanpura(-0.62, DUR, .22)                 # quiet drone keeps the Indian colour under everything
+# a riser out of the breakdown, and a big hit on the exile line
+n = int(2.0 * SR); tt = T(n); place(music, (bp(rng.standard_normal(n), 800, 7000) * (tt / 2.0) ** 2 * .5 + np.sin(2 * np.pi * np.cumsum(200 * 2 ** (tt / 2.0 * 2)) / SR) * (tt / 2.0) ** 2 * .2), KING - 2.0, 1.0, raw=True)
+place(music, kick808(40, 1.2), EXILE, 1.2, raw=True)
 
 # effects (voiceover seconds)
 place(sfx, rattle(1.1), 0.0, .8)
@@ -106,7 +146,7 @@ place(sfx, thud(70, .4, .9), 36.3, .7); place(sfx, rattle(.7), 37.6, .8); place(
 place(sfx, chime(400, .9), 39.5, .25)
 place(sfx, rattle(.5), DUR - .25, .8)          # the throw that the first frame continues
 VO = np.zeros(N); VO[:min(N, len(vo))] = vo[:N]
-venv = lp(np.abs(VO), 6); duck = 1 - .55 * np.clip(venv / .05, 0, 1)
-mix = VO + lp(music, 7000) * .24 * duck + sfx * .5
+venv = lp(np.abs(VO), 6); duck = 1 - .6 * np.clip(venv / .05, 0, 1)
+mix = VO + lp(music, 9000) * .041 * duck + sfx * .5   # music about 16 dB under the voice (6 dB quieter than the old score)
 mix = mix / np.max(np.abs(mix)) * .89
 sf.write('audio/mix.wav', np.stack([mix, mix], 1), SR); print('mix', round(DUR, 2))

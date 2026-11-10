@@ -11,5 +11,5 @@ for p in "${pids[@]}"; do wait "$p"; done
 for i in $(seq 0 $((N - 1))); do f=$(printf 'seg/shot_%02d.mp4' $i); [ -f "$f" ] || { echo "shot $i failed"; exit 1; }; echo "file '$PWD/$f'"; done > seg/list.txt
 ffmpeg -v error -y -f concat -safe 0 -i seg/list.txt -c copy silent.mp4
 ffmpeg -v error -y -i silent.mp4 -i audio/mix.wav -map 0:v -map 1:a -c:v libx264 -crf 20 -preset medium -pix_fmt yuv420p \
-  -af "alimiter=limit=0.8:attack=2:release=60,loudnorm=I=-14:TP=-1.5:LRA=9,alimiter=limit=0.83:attack=1:release=50:level=false" -c:a aac -b:a 192k -ar 48000 -shortest -movflags +faststart dice-game.mp4
+  -af "loudnorm=I=-14:TP=-2:LRA=9" -c:a aac -b:a 192k -ar 48000 -shortest -movflags +faststart dice-game.mp4
 echo "done: $PWD/dice-game.mp4"

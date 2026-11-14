@@ -1,8 +1,25 @@
 <!doctype html><html><head><meta charset="utf-8">
 <style>
-@font-face{font-family:Poppins;font-weight:700;src:url(fonts/Poppins-Bold.ttf)}
+@font-face{font-family:Poppins;font-weight:700 800;src:url(fonts/Poppins-Bold.ttf)}
 @font-face{font-family:Lora;font-weight:400 700;src:url(fonts/Lora-Variable.ttf)}
 body{margin:0;background:#000}</style></head><body>
 <canvas id="c"></canvas>
-<script src="lib.js"></script><script src="chars.js"></script><script src="env.js"></script><script src="words.js"></script><script src="warp.js"></script><script src="shots.js"></script><script src="main.js"></script>
+<script>
+window.END_PAD = 0.1; // ends on the last word and loops back to the first frame
+const YELLOW = /^(six|gary|dahl's|mexican|august|1975|three|dollars|ninety-five|two|10,000|tonight|show|four|christmas|half|million|95|cents|february)$/i;
+window.CAP_STYLE = { maxWords: 3, y: 1280, size: 74, outline: 7, maxWidth: 780,
+  yellow: (w, i) => { const c = w.replace(/^["“]+|[.,?!:…"”]+$/g, '').toLowerCase();
+    if (c === 'one') return i + 1 < WORDS.length && WORDS[i + 1].w === 'and';   // "one and a half million", not "each one"
+    if (c === 'dollars') return i > 0 && /^(three|four)$/i.test(WORDS[i - 1].w);
+    return YELLOW.test(c); } };
+window.OVERLAY = (ctx, t) => {
+  const end = 3.92, a = 1 - clamp((t - end) / .3); if (a <= 0) return;
+  ctx.globalAlpha = a;
+  rrect(ctx, 540 - 200, 300, 400, 64, 32); ctx.fillStyle = '#e0392f'; ctx.fill();
+  text(ctx, 'ZERO TO EMPIRE #2', 540, 333, 34, '#fff', '#000', 0, 'Poppins', 700);
+  for (const [s, y] of [['THE MAN WHO', 440], ['SOLD ROCKS', 535]]) { text(ctx, s, 540, y, 96, '#fff', '#000', 12, 'Poppins', 800); text(ctx, s, 540, y, 96, '#fff', '#000', 0, 'Poppins', 800); }
+  ctx.globalAlpha = 1;
+};
+</script>
+<script src="lib.js"></script><script src="chars.js"></script><script src="env.js"></script><script src="env2.js"></script><script src="words.js"></script><script src="warp.js"></script><script src="shots.js"></script><script src="main.js"></script>
 </body></html>

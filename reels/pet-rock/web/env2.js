@@ -34,6 +34,7 @@ function rock(ctx, x, y, s, seed = 1, rot = 0) { // a smooth grey beach stone
   for (let i = 0; i < 40; i++) { circle(ctx, (R() - .5) * 240, (R() - .5) * 150, 1.5 + R() * 3.5); ctx.fillStyle = R() > .5 ? 'rgba(60,58,56,.45)' : 'rgba(235,232,226,.5)'; ctx.fill(); }
   ellipse(ctx, -35, -38, 52, 18, -.25); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fill();
   ctx.restore();
+  ctx.beginPath(); for (let i = 0; i <= 24; i++) { const a = i / 24 * TAU; const rr = 1 + .06 * Math.sin(a * 3 + seed) + .03 * Math.sin(a * 5 + seed * 2); const px = Math.cos(a) * 125 * rr, py = Math.sin(a) * 78 * rr; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath();
   ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.stroke();
   ctx.restore();
 }
@@ -61,7 +62,7 @@ function cashPile(ctx, x, y, s) { ctx.save(); ctx.translate(x, y); ctx.scale(s, 
 function sign(ctx, x, y, s, label, col = '#f3ecd8', txt = '#1d1a22', w = 420) { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); line(ctx, 0, 0, 0, 260, 14, '#6b4a2c'); rrect(ctx, -w / 2, -120, w, 130, 12); fillStroke(ctx, col, 8); text(ctx, label, 0, -55, label.length > 12 ? 40 : 56, txt, INK, 0, 'Poppins', 700); ctx.restore(); }
 function calendarPage(ctx, x, y, s, month, year) { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); rrect(ctx, -240, -300, 480, 560, 20); fillStroke(ctx, '#fbf8f0', 9); ctx.save(); rrect(ctx, -240, -300, 480, 560, 20); ctx.clip(); ctx.fillStyle = '#c8323a'; ctx.fillRect(-250, -310, 500, 160); ctx.restore(); rrect(ctx, -240, -300, 480, 560, 20); fillStroke(ctx, null, 9); text(ctx, month, 0, -222, month.length > 6 ? 62 : 80, '#fff', INK, 0, 'Lora', 700); text(ctx, year, 0, 40, 150, '#1d1a22', INK, 0, 'Lora', 700); ctx.restore(); }
 function priceTag(ctx, x, y, s, label) { ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(-.18); path(ctx, [[-170, -70], [130, -70], [190, 0], [130, 70], [-170, 70]]); fillStroke(ctx, '#ffd23a', 8); circle(ctx, 120, 0, 14); ctx.fillStyle = INK; ctx.fill(); text(ctx, label, -30, 4, 80, '#1d1a22', INK, 0, 'Poppins', 700); ctx.restore(); }
-function shelves(ctx, x, y, w, rows, t, fly = 0) { for (let r = 0; r < rows; r++) { const sy = y + r * 260; rrect(ctx, x - w / 2, sy, w, 26, 6); fillStroke(ctx, '#8a5a32', 7); for (let i = 0; i < 4; i++) { const k = clamp(fly * 4 - (r * 4 + i) * .15); if (k >= 1) continue; ctx.save(); ctx.translate(x - w / 2 + 90 + i * (w - 180) / 3, sy - k * 900); ctx.rotate(k * 3); petBox(ctx, 0, 0, .32, {}); ctx.restore(); } } }
+function shelves(ctx, x, y, w, rows, t, fly = 0) { for (let r = 0; r < rows; r++) { const sy = y + r * 260; rrect(ctx, x - w / 2, sy, w, 26, 6); fillStroke(ctx, '#8a5a32', 7); for (let i = 0; i < 4; i++) { const k = clamp(fly * 2.2 - (r * 4 + i) * .1); if (k >= 1) continue; ctx.save(); ctx.translate(x - w / 2 + 90 + i * (w - 180) / 3, sy - k * 900); ctx.rotate(k * 3); petBox(ctx, 0, 0, .32, {}); ctx.restore(); } } }
 function tvSet(ctx, t) { // a generic late-night set: city skyline backdrop, desk, guest chair
   ctx.fillStyle = '#1a2240'; ctx.fillRect(-900, -900, 2900, 3200);
   for (let i = 0; i < 14; i++) { const h = 300 + (i * 97 % 380); rrect(ctx, -100 + i * 90, 1100 - h, 80, h, 0); ctx.fillStyle = '#26305a'; ctx.fill(); for (let k = 0; k < h / 60; k++) if ((i + k) % 3) { rrect(ctx, -84 + i * 90, 1120 - h + k * 60, 16, 20, 2); ctx.fillStyle = '#ffd98a'; ctx.fill(); } }

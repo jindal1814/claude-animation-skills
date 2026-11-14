@@ -1,398 +1,211 @@
-// ---------- characters ----------
-const YOU = { cols: PAL.red, hat: 'bandana', hatCol: '#d8312b', dotCol: '#fff' };
-const PATCH = { cols: PAL.yellow, hat: 'bandana', hatCol: '#6c43c0', dotCol: '#fff' };
-const SAILOR = { cols: PAL.blue, hat: 'sailor', belt: false };
-const C = (base, extra) => Object.assign({}, base, extra);
+// Zero to Empire #2: The Man Who Sold Rocks. Shot list in seconds of the voiceover (see SCRIPT.md).
+// Loop: frame 1 is an extreme close-up of one rock, filling the screen. The opening pulls back from it to its box;
+// the last shot zooms into a beach rock at the same spot until it fills the screen again.
+const END = 55.082 + 0.1;
+const at = (abs, start) => abs - start;
+const handheld = (t, a = 3) => shake(t * .35, a, 1, 2);
 const walkLegs = (t, sp = 9, amp = .55) => ({ L: [Math.sin(t * sp) * amp + .05, -Math.max(0, Math.sin(t * sp + 1)) * .7], R: [-Math.sin(t * sp) * amp + .05, -Math.max(0, -Math.sin(t * sp + 1)) * .7] });
-const walkArms = (t, sp = 9, amp = .6) => ({ L: [.3 - Math.sin(t * sp) * amp, -.3], R: [.3 + Math.sin(t * sp) * amp, -.3] });
-const handheld = (t, a = 4) => shake(t * .35, a, 1, 2);
+function flash(ctx, a) { if (a <= 0) return; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = clamp(a); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+const RX = 540, RY = 1000, RS = .9, Z0 = 16;           // the loop rock: world position, size, and the fill-the-screen zoom
+const loopRock = ctx => rock(ctx, RX, RY, RS, 4, 0);
+const holdOut = { L: [.3, -.1], R: { ik: [.4, -.62] } };
 
-// deck background (sky, sea, pillars, bulwark, floor)
-function deckBG(ctx, t, cam, o = {}) {
-  applyCam(ctx, cam, .08); drawSky(ctx, o.skyTop, o.skyBot);
-  if (o.sun) { applyCam(ctx, cam, .1); drawSun(ctx, o.sun[0], o.sun[1], o.sun[2], t, o.sunPow || 1); }
-  applyCam(ctx, cam, .14);
-  drawCloud(ctx, 160 + t * 6, 260, 120, 1); drawCloud(ctx, 760 + t * 4, 150, 90, 2); drawCloud(ctx, 1050 + t * 5, 420, 70, 3, .9); drawCloud(ctx, -100 + t * 5, 520, 80, 4, .9);
-  applyCam(ctx, cam, .3); drawPillars(ctx, o.horizon || 760, o.set || 'A');
-  applyCam(ctx, cam, .45); drawSea(ctx, o.horizon || 760, t);
-  if (o.farShip) { drawShip(ctx, o.farShip[0], (o.horizon || 760) + 40, o.farShip[1], t, { skull: true, flag: '#1b1820', hull: '#3d2a2a', ph: 1 }); }
-  applyCam(ctx, cam, 1);
-  drawBulwark(ctx, o.back || 1000, o.wallH || 140);
-  drawDeckFloor(ctx, o.back || 1000, o.vx || 540);
+// tau >= 0: pull back from the rock to its box, stacks of boxes and a 1970s man fanning cash
+function hookScene(ctx, tau) {
+  const z = tau <= 0 ? Z0 : lerp(Z0, 1.0, easeOut(clamp(tau / 2.4)));
+  applyCam(ctx, { x: RX, y: RY + (1 - clamp(z / Z0)) * 0, z, r: 0 }, 1);
+  sky(ctx, 'day'); ctx.fillStyle = '#e8dcc0'; ctx.fillRect(-900, -900, 2900, 2000); ctx.fillStyle = '#b9a07a'; ctx.fillRect(-900, 1240, 2900, 1600); line(ctx, -900, 1240, 2000, 1240, 8, INK);
+  for (const [bx, by] of [[150, 1240], [150, 1000], [930, 1240], [930, 1000], [930, 760]]) petBox(ctx, bx, by, .5, {});
+  petBox(ctx, RX, RY + 215 * 1.0 + 25, 1.0, { open: 1, inside: false, noLabel: true });
+  ctx.save(); rrect(ctx, RX - 205, RY + 25, 410, 120, 6); ctx.clip(); straw(ctx, RX, RY + 80, 400, 110); ctx.restore();
+  const cash = clamp((tau - 2.2) * 2);
+  if (cash > 0) { person(ctx, GARY, { x: 300, y: 1880, s: 560, alpha: 1, face: { eyes: 'happy', mouth: 'grin' }, arms: { L: [.3, -.1], R: { ik: [.35, -.95] } } }); cashFan(ctx, 300 + .35 * 560, 1880 - .95 * 560, .9 * backOut(cash), cash); }
+  loopRock(ctx);
 }
-function caribbeanHeat(ctx, a) { if (a <= 0) return; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen'; const g = ctx.createRadialGradient(900, 200, 50, 900, 200, 1500); g.addColorStop(0, `rgba(255,220,120,${.55 * a})`); g.addColorStop(1, `rgba(255,170,60,${.12 * a})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+// tau < 0: waves wash over a beach of ordinary rocks; the camera settles on one rock until it fills the screen
+function beachSettle(ctx, tau, t) {
+  const u = clamp((tau + 2.0) / 2.0); const z = lerp(1.0, Z0, Math.pow(u, 2.6));
+  applyCam(ctx, { x: RX, y: RY, z, r: 0 }, 1);
+  beach(ctx, 'golden', t, { foam: 60 + Math.sin(t * 1.5) * 50, sun: true });
+  const R = rng(12); for (let i = 0; i < 22; i++) { const x = R() * 1200 - 60, y = 1220 + R() * 700; if (Math.abs(x - RX) < 200 && Math.abs(y - RY) < 160) continue; rock(ctx, x, y, .35 + R() * .4, i + 20, (R() - .5) * .6); }
+  rock(ctx, 300, 1050, .5, 31, .2); rock(ctx, 820, 1080, .6, 32, -.3);
+  loopRock(ctx);
+  goldenGrade(ctx, 1 - u);
+}
 
 const SHOTS = [];
-// A — hook: patch lifted, eye is fine
-SHOTS.push({ start: 0, end: 3.8, tr: 'whip', draw(ctx, lt, t) {
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0], y: 900 + hh[1] - lt * 10, z: 1 + lt * .035, r: Math.sin(t * .5) * .006 };
-  ctx.save(); ctx.filter = 'blur(5px)'; deckBG(ctx, t, cam, { sun: [900, 160, 70], sunPow: .7 });
-  applyCam(ctx, cam, 1); drawBarrel(ctx, 140, 1260, 1.6); drawCannon(ctx, 980, 1240, 1.2, -.05, -1);
-  drawStick(ctx, C(YOU, { x: 260, y: 1180, s: 330, face: { eyes: 'normal', look: [.6, 0], mouth: 'smile' }, arms: { L: [.3, -.1], R: [2.4, .4] } }));
-  ctx.restore();
-  applyCam(ctx, cam, 1);
-  const lift = kf(lt, [[2.82, 0], [3.12, 1, backOut]]);
-  const reach = kf(lt, [[2.5, 0], [2.85, 1]]);
-  const handTgt = [lerp(-.33, -.09, reach), lerp(-.42, -.8 - lift * .1, reach)];
-  const blink = (lt > 1.2 && lt < 1.32) ? 1 : 0;
-  drawStick(ctx, C(PATCH, {
-    x: 540, y: 2050, s: 1500, bob: Math.sin(t * 3) * .004, headTilt: Math.sin(t * 1.6) * .03 + (lt > 3.1 ? -.06 : 0),
-    patch: { pos: -1, lift }, armLen: 1.2,
-    arms: { L: reach > 0 ? { ik: handTgt, bend: -1 } : [.25, -.1], R: [.95, -2.1] },
-    face: { eyes: 'normal', look: lt > 3.15 ? [0, 0] : [0, 0], blink, mouth: lt > 3.0 ? 'grin' : 'smirk', browOne: lt > 3.0 ? -1 : (lt > .4 ? 1 : 0), browAng: 0 }, shadow: false,
-  }));
-  // reveal sparkle on the healthy eye
-  const sa = kf(lt, [[3.05, 0], [3.2, 1], [3.6, 0]]);
-  sparkle(ctx, 540 - .072 * 1500 + 70, 2050 - .77 * 1500 - 60, 70 * sa, sa);
+// 1 Hook (Day): already moving — pull back from the rock to its box, stacks of boxes, a man fanning cash
+SHOTS.push({ start: 0, end: 3.92, tr: 'cut', draw(ctx, lt) { hookScene(ctx, lt); } });
+// 2 Stakes (Day): a tiny booklet titled TRAINING MANUAL flips open beside the rock
+SHOTS.push({ start: 3.92, end: 5.76, tr: 'cut', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.05 + lt * .04, r: 0 }, 1);
+  ctx.fillStyle = '#e8dcc0'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#c9a874'; ctx.fillRect(-900, 1150, 2900, 1600); line(ctx, -900, 1150, 2000, 1150, 8, INK);
+  rock(ctx, 300, 1100, 1.1, 4);
+  const op = clamp((lt - at(5.2, 3.92)) * 4);
+  manual(ctx, 720, 900, .95 + op * .1, op > .5 ? 'COME' : null, op);
+  flash(ctx, kf(lt, [[0, .9], [.25, 0]]));
 } });
-// B — wide seascape: boarding under the sun
-SHOTS.push({ start: 3.8, end: 5.45, tr: 'whip', draw(ctx, lt, t) {
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0] + lt * 25, y: 820 + hh[1], z: 1.0 + lt * .06, r: 0 };
-  applyCam(ctx, cam, .08); drawSky(ctx, '#4aaeea', '#fbe9c4', -300, 950);
-  applyCam(ctx, cam, .1); drawSun(ctx, 820, 330, 95, t, 1.3);
-  applyCam(ctx, cam, .15); drawCloud(ctx, 150, 420, 110, 5); drawCloud(ctx, 1000, 560, 80, 6);
-  applyCam(ctx, cam, .3); drawPillars(ctx, 930, 'B');
-  applyCam(ctx, cam, .55); drawSea(ctx, 930, t);
-  applyCam(ctx, cam, 1);
-  drawShip(ctx, 850, 1250, .9, t, { flag: '#2a63c8', hull: '#9a5428', ph: 2, flip: -1 });
-  drawShip(ctx, 280, 1420, 1.1, t, { skull: true, flag: '#1b1820', hull: '#3b2a2c', stripe: '#c9a14a', sail: '#e9dfc9', ph: 0 });
-  // grapple ropes + tiny swinging pirate
-  for (let i = 0; i < 3; i++) line(ctx, 420 + i * 60, 1300 - i * 6, 640 + i * 50, 1170 - i * 4, 4, '#4a3424');
-  const th = kf(lt, [[0, -.7], [1.6, .55]]);
-  const px = 560, py = 760, L = 330; const hx = px + Math.sin(th) * L, hy = py + Math.cos(th) * L;
-  line(ctx, px, py, hx, hy, 3, '#4a3424');
-  drawStick(ctx, C(YOU, { x: hx, y: hy + 62, s: 70, shadow: false, arms: { L: [.3, -.2], R: { ik: [(0) / 70 * 0 + .02, -.95] } }, legs: { L: [.6, -.9], R: [.4, -.8] }, face: { eyes: 'wide', mouth: 'grin' } }));
-  const foam = 1;
-  
-  caribbeanHeat(ctx, .35);
+// 3 Bar (Golden): a 1970s bar — one friend holds up a chewed shoe, another a tangled leash; Gary listens, grinning
+SHOTS.push({ start: 5.76, end: 8.96, tr: 'cut', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  bar70s(ctx, t);
+  person(ctx, FRIENDS[0], { x: 200, y: 1900, s: 560, face: { eyes: 'half', mouth: 'frown', browAng: .3 }, arms: { L: [.3, -.1], R: { ik: [.3, -.95] } } });
+  ctx.save(); ctx.translate(200 + .3 * 560, 1900 - .95 * 560 - 40); ctx.rotate(-.3); ctx.beginPath(); ctx.moveTo(-70, 20); ctx.quadraticCurveTo(-60, -40, 10, -40); ctx.lineTo(70, -10); ctx.lineTo(70, 20); ctx.closePath(); fillStroke(ctx, '#7a4a2a', 6); for (let i = 0; i < 4; i++) { circle(ctx, -40 + i * 25, 20, 9); ctx.fillStyle = '#5a3420'; ctx.fill(); } ctx.restore();
+  person(ctx, FRIENDS[1], { x: 880, y: 1900, s: 560, flip: -1, face: { eyes: 'half', mouth: 'frown' }, arms: { L: [.3, -.1], R: { ik: [.3, -.95] } } });
+  ctx.save(); ctx.translate(880 - .3 * 560, 1900 - .95 * 560); ctx.beginPath(); for (let i = 0; i < 40; i++) { const a = i * .6; ctx.lineTo(Math.cos(a) * (20 + i * 1.5) + Math.sin(i) * 10, i * 4 + Math.sin(a) * 18); } ctx.lineWidth = 7; ctx.strokeStyle = '#c22a2a'; ctx.stroke(); ctx.restore();
+  person(ctx, GARY, { x: 540, y: 1960, s: 600, face: { eyes: 'normal', look: [Math.sin(lt * 1.5), -.2], mouth: 'grin' }, arms: POSE.idle.arms });
+  goldenGrade(ctx);
 } });
-// C — swing onto the deck, squint at the sun
-SHOTS.push({ start: 5.45, end: 8.2, tr: 'whip', draw(ctx, lt, t) {
-  const land = .82;
-  const p = clamp(lt / land);
-  const bx = kf(lt, [[0, -260], [land, 600]], x => x), by = kf(lt, [[0, 900], [land * .55, 1180, easeOut], [land, 1640, easeIn]], x => x);
-  const hh = handheld(t, 4);
-  const cam = { x: lerp(330, 560, ease(clamp(lt / 1.1))) + hh[0], y: lerp(1150, 1200, ease(clamp(lt / 1.2))) + hh[1], z: kf(lt, [[0, 1.0], [1.0, 1.05], [2.75, 1.22]]), r: 0 };
-  deckBG(ctx, t, cam, { sun: [900, 210, 90], sunPow: 1.25, farShip: [-150, .55] });
-  applyCam(ctx, cam, 1);
-  drawMast(ctx, 160, -900, 1060, 70); drawRigging(ctx, 330, 1000, 200, 200, 9, 110);
-  drawBarrel(ctx, 960, 1180, 1.05); drawBarrel(ctx, 860, 1230, 1.1);
-  drawCrate(ctx, 1040, 1300, 180, 150, 0, 'TEA');
-  // rope
-  const pivot = [520, -700];
-  const flying = lt < land;
-  const hand = [bx + 70, by - 560];
-  if (flying) line(ctx, pivot[0], pivot[1], hand[0], hand[1], 7, '#6a4a2c');
-  else { const sw = Math.sin((lt - land) * 5) * Math.exp(-(lt - land) * 2) * 120; line(ctx, pivot[0], pivot[1], 520 + 180 + sw, 1000, 7, '#6a4a2c'); }
-  const sq = flying ? 1 : kf(lt, [[land, .82], [land + .25, 1, backOut]]);
-  const squint = lt > 1.15;
-  const handOverEyes = kf(lt, [[1.05, 0], [1.35, 1]]);
-  drawStick(ctx, C(YOU, {
-    x: bx, y: by, s: 600, squash: sq, lean: flying ? .2 : Math.sin(t * 2) * .02,
-    arms: flying ? { L: [.6, -.3], R: { ik: [(hand[0] - bx) / 600, (hand[1] - by) / 600] } }
-      : (handOverEyes > 0 ? { L: [.35, -.15], R: { ik: [lerp(.3, .03, handOverEyes), lerp(-.5, -.9, handOverEyes)], bend: -1 } } : POSE.idle.arms),
-    armLen: 1.15,
-    legs: flying ? { L: [.9, -1.2], R: [.6, -1.0] } : { L: [.18, -.05], R: [.18, -.05] },
-    face: squint ? { eyes: 'squint', mouth: 'teeth', browAng: .3 } : { eyes: 'wide', mouth: flying ? 'grin' : 'o', look: [.3, -.3] },
-    headTilt: squint ? -.12 : 0,
-  }));
-  if (!flying) { const pa = kf(lt, [[land, 1], [land + .5, 0]]); puff(ctx, bx - 160, by - 20, 70 * (1 + (lt - land)), t, '#efe3cf', 3, pa); puff(ctx, bx + 160, by - 20, 70 * (1 + (lt - land)), t, '#efe3cf', 4, pa); }
-  if (squint) { const sa = clamp((lt - 1.4) * 3); sweat(ctx, bx + 150, by - 560 + (lt - 1.4) * 60, 34, sa); sweat(ctx, bx - 160, by - 520 + (lt - 1.7) * 50, 26, clamp((lt - 1.7) * 3)); }
-  caribbeanHeat(ctx, .45 + (squint ? .25 + Math.sin(t * 6) * .05 : 0));
+// 4 Joke (Golden): Gary sets a rock on the bar and pats it like a dog; his friends burst out laughing
+SHOTS.push({ start: 8.96, end: 13.12, tr: 'cut', draw(ctx, lt, t) {
+  const set = at(10.3, 8.96), laugh = at(10.96, 8.96);
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .025, r: 0 }, 1);
+  bar70s(ctx, t);
+  const rx = 560, ry = 860, d = lt > set ? 0 : (set - lt) * 300;
+  if (lt > set - .8) rock(ctx, rx, ry - d, .9, 5);
+  const pat = lt > set ? Math.abs(Math.sin((lt - set) * 7)) : 0;
+  person(ctx, GARY, { x: 300, y: 1880, s: 620, face: { eyes: lt > set ? 'happy' : 'normal', mouth: 'grin' }, arms: { L: [.3, -.1], R: { ik: [.42, -.92 + pat * .06] } } });
+  for (const [i, x, f] of [[0, 760, -1], [2, 990, -1]]) { const l = lt > laugh; const bob = l ? Math.abs(Math.sin(lt * 14 + i)) * .02 : 0; person(ctx, FRIENDS[i], { x, y: 1880, s: 560, flip: f, bob: -bob, face: { eyes: l ? 'happy' : 'normal', mouth: l ? 'grin' : 'o' }, arms: l ? { L: { ik: [-.05, -.45] }, R: { ik: [.05, -.45] } } : POSE.idle.arms }); }
+  goldenGrade(ctx);
 } });
-// D — crew panics and hides below deck
-function hatchFall(ctx, ch, x0, y0, jumpT, lt, hatch, extra) {
-  // run from x0 to hatch center then jump in
-  const runDur = .45; const hx = hatch.cx + clamp((x0 - hatch.cx) * .3, -110, 110);
-  const tp = lt - jumpT;
-  let x = x0, y = y0, legs, arms = POSE.handsUp.arms, lean = 0;
-  if (tp < -runDur) { legs = { L: [Math.sin(lt * 30) * .15 + .2, -.1], R: [-Math.sin(lt * 30) * .15 + .2, -.1] }; y = y0 - Math.abs(Math.sin(lt * 15)) * 40; }
-  else if (tp < 0) { const k = (tp + runDur) / runDur; x = lerp(x0, hx, k); y = lerp(y0, hatch.cy - 10, k) - Math.abs(Math.sin(lt * 18)) * 30; legs = walkLegs(lt, 22, .7); arms = { L: [2.6 + Math.sin(lt * 22) * .3, .2], R: [2.6 - Math.sin(lt * 22) * .3, .2] }; lean = (hx - x0) > 0 ? .15 : -.15; }
-  else { x = hx; y = hatch.cy - 10 - 110 * Math.sin(Math.min(tp, .35) / .35 * Math.PI / 2) + Math.max(0, tp - .35) * Math.max(0, tp - .35) * 9000 * 0 + (tp > .35 ? (tp - .35) * (tp - .35) * 7000 : 0) - (tp < .35 ? 0 : 0); legs = { L: [.5, -.9], R: [.5, -.9] }; arms = POSE.handsUp.arms; }
-  if (tp > .35) y = hatch.cy - 120 + (tp - .35) * (tp - .35) * 12000;
-  const inHole = tp > 0.2;
-  ctx.save();
-  if (inHole) { ctx.beginPath(); ctx.rect(-3000, -3000, 7000, 3000 + hatch.front); ctx.clip(); }
-  if (y - 800 < hatch.front + 40) drawStick(ctx, C(ch, Object.assign({ x, y, legs, arms, lean, shadow: !inHole }, extra)));
-  ctx.restore();
-}
-SHOTS.push({ start: 8.2, end: 10.6, tr: 'cut', draw(ctx, lt, t) {
-  const hh = handheld(t, 4);
-  const cam = { x: 540 + hh[0], y: 1150 + hh[1], z: kf(lt, [[0, 1.0], [2.4, 1.1]]), r: .0 };
-  deckBG(ctx, t, cam, { sun: [880, 160, 70], back: 860, wallH: 130, horizon: 640 });
-  applyCam(ctx, cam, 1);
-  drawMast(ctx, 920, -900, 920, 66);
-  drawBarrel(ctx, 110, 1080, 1.0); drawBarrel(ctx, 230, 1120, 1.05);
-  const hatch = { cx: 540, cy: 1420, w: 420, h: 170 }; const g = drawHatch(ctx, hatch.cx, hatch.cy, hatch.w, hatch.h); hatch.front = g.front;
-  const panic = lt > .25;
-  const crew = [[230, 1500, 1.05, 'L'], [860, 1460, 1.38, 'R'], [690, 1750, 1.7, 'R']];
-  // pre-panic idle faces
-  for (const [x0, y0, jt, side] of crew) {
-    const face = panic ? { eyes: 'wide', mouth: 'teeth', browAng: -.35, browUp: 1 } : { eyes: 'normal', mouth: 'smile', look: [side === 'L' ? .8 : -.8, 0] };
-    if (!panic) drawStick(ctx, C(SAILOR, { x: x0, y: y0, s: 470, face, arms: POSE.idle.arms }));
-    else hatchFall(ctx, SAILOR, x0, y0, jt, lt, hatch, { s: 470, face });
+// 5 Stones (Day): a sunny beach — Gary scoops smooth stones into a sack beside a sign reading LESS THAN 1¢ EACH
+SHOTS.push({ start: 13.12, end: 16.16, tr: 'fade', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  beach(ctx, 'day', t, { sun: true, foam: 30 + Math.sin(t * 1.5) * 25 });
+  sign(ctx, 830, 1200, .95, 'LESS THAN 1¢ EACH', '#f3ecd8', '#1d1a22', 470);
+  ctx.save(); ctx.translate(560, 1720); ctx.beginPath(); ctx.moveTo(-110, 0); ctx.quadraticCurveTo(-130, -200, -60, -240); ctx.lineTo(60, -240); ctx.quadraticCurveTo(130, -200, 110, 0); ctx.closePath(); fillStroke(ctx, '#c9a874', 8); ctx.restore();
+  const R = rng(3); for (let i = 0; i < 9; i++) rock(ctx, 100 + R() * 900, 1500 + R() * 380, .25 + R() * .2, i + 40);
+  const scoop = (lt * 1.4) % 1;
+  person(ctx, GARY, { x: 300, y: 1880, s: 580, lean: 0, face: { eyes: 'happy', mouth: 'grin' }, arms: { L: [.3, -.1], R: { ik: [lerp(.45, .5, scoop), lerp(-.2, -.6, Math.sin(scoop * Math.PI))] } } });
+  rock(ctx, 300 + .48 * 580, 1880 - lerp(.2, .6, Math.sin(scoop * Math.PI)) * 580 - 10, .3, 50);
+} });
+// 6 Box (Day): a rock is laid on straw in a box with air holes, and the lid closes gently
+SHOTS.push({ start: 16.16, end: 19.36, tr: 'cut', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.15 + lt * .03, r: 0 }, 1);
+  ctx.fillStyle = '#e8dcc0'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#c9a874'; ctx.fillRect(-900, 1180, 2900, 1600); line(ctx, -900, 1180, 2000, 1180, 8, INK);
+  const drop = easeOut(clamp(lt / .8)), close = ease(clamp((lt - at(18.4, 16.16)) / .8));
+  petBox(ctx, 540, 1280, 1.3, { open: 1 - close, inside: false, noLabel: true });
+  if (close < .6) { ctx.save(); rrect(ctx, 540 - 205 * 1.3, 1280 - 235 * 1.3, 410 * 1.3, 120 * 1.3, 6); ctx.clip(); straw(ctx, 540, 1280 - 170 * 1.3, 520, 140); ctx.restore(); rock(ctx, 540, lerp(700, 1280 - 215 * 1.3, drop), 1.1, 4); }
+  for (let i = 0; i < 4; i++) circle(ctx, 540 - 195 + i * 130, 1280 - 150 * 1.3, 20);
+} });
+// 7 Manual (Day): pages flip — COME, STAY, ROLL OVER, and the rock doesn't budge; then PLAY DEAD, and it earns a gold star
+SHOTS.push({ start: 19.36, end: 23.12, tr: 'cut', draw(ctx, lt, t) {
+  const pages = [[at(20.24, 19.36), 'COME'], [at(20.56, 19.36), 'STAY'], [at(21.04, 19.36), 'ROLL OVER'], [at(22.4, 19.36), 'PLAY DEAD']];
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  ctx.fillStyle = '#e8dcc0'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#c9a874'; ctx.fillRect(-900, 1180, 2900, 1600); line(ctx, -900, 1180, 2000, 1180, 8, INK);
+  let page = null; for (const [pt, p] of pages) if (lt >= pt) page = p;
+  manual(ctx, 540, 600, 1.15, page, 1);
+  rock(ctx, 540, 1150, 1.0, 4);
+  if (page && page !== 'PLAY DEAD') { const q = (lt * 2) % 1; text(ctx, '...', 700, 1020 - q * 20, 70, '#1d1a22', INK, 0, 'Poppins', 700); }
+  goldStar(ctx, 720, 1010, 80, (lt - pages[3][0] - .15) * 4);
+} });
+// 8 Share moment (Day): in a gift shop, a friend grabs something purely because its box is funny; another rolls her eyes
+SHOTS.push({ start: 23.12, end: 25.68, tr: 'fade', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  ctx.fillStyle = '#f0d8c0'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#c98a5a'; ctx.fillRect(-900, 1350, 2900, 1600); line(ctx, -900, 1350, 2000, 1350, 8, INK);
+  for (let r = 0; r < 3; r++) { rrect(ctx, 80, 420 + r * 250, 920, 24, 6); fillStroke(ctx, '#8a5a32', 7); for (let i = 0; i < 5; i++) { const c = ['#e0392f', '#3fa35b', '#2f63c9', '#f2b52a', '#7a4bc4'][(i + r) % 5]; rrect(ctx, 120 + i * 180, 420 + r * 250 - 110, 120, 110, 8); fillStroke(ctx, c, 6); } }
+  const grab = easeOut(clamp((lt - .4) / .5));
+  person(ctx, FRIENDS[2], { x: 300, y: 1900, s: 600, face: { eyes: 'happy', mouth: 'grin' }, arms: { L: [.3, -.1], R: { ik: [.3, -.95] } } });
+  ctx.save(); ctx.translate(lerp(420, 300 + .3 * 600, grab), lerp(920, 1900 - .95 * 600 - 60, grab)); ctx.rotate(grab * .2);
+  rrect(ctx, -90, -80, 180, 160, 10); fillStroke(ctx, '#ff8ac8', 7); circle(ctx, -35, -20, 22); fillStroke(ctx, '#fff', 5); circle(ctx, 35, -20, 22); fillStroke(ctx, '#fff', 5); circle(ctx, -30, -16, 9); ctx.fillStyle = INK; ctx.fill(); circle(ctx, 40, -26, 9); ctx.fill(); ctx.beginPath(); ctx.arc(0, 30, 30, .2, Math.PI - .2); ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.stroke(); ctx.restore();
+  person(ctx, FRIENDS[3], { x: 820, y: 1900, s: 580, flip: -1, face: { eyes: 'normal', look: [Math.sin(lt * 3) * .6, -1], mouth: 'flat', browUp: 1 }, arms: { L: [.3, -.1], R: [.9, -2.1] } });
+} });
+// 9 Launch (Day): a calendar page for August 1975 and a price tag reading $3.95
+SHOTS.push({ start: 25.68, end: 28.56, tr: 'cut', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  ctx.fillStyle = '#d9e8f0'; ctx.fillRect(-900, -900, 2900, 3200);
+  const c = backOut(clamp(lt * 4)); ctx.save(); ctx.translate(540, 660); ctx.scale(c, c); calendarPage(ctx, 0, 0, 1.0, 'AUGUST', '1975'); ctx.restore();
+  const p = backOut(clamp((lt - at(26.96, 25.68)) * 4)); if (p > 0) { ctx.save(); ctx.translate(560, 1060); ctx.scale(p, p); priceTag(ctx, 0, 0, 1.1, '$3.95'); ctx.restore(); }
+} });
+// 10 Boom (Golden): a counter spins to 10,000 A DAY as boxes fly off shop shelves
+SHOTS.push({ start: 28.56, end: 30.80, tr: 'cut', draw(ctx, lt, t) {
+  const hh = handheld(t, 3); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.0 + lt * .04, r: 0 }, 1);
+  ctx.fillStyle = '#f0d8c0'; ctx.fillRect(-900, -900, 2900, 3200);
+  shelves(ctx, 540, 820, 900, 3, t, lt / 2.2);
+  const spun = lt > at(29.84, 28.56);
+  rrect(ctx, 190, 220, 700, 220, 20); fillStroke(ctx, '#1d1a22', 9);
+  if (spun) text(ctx, '10,000 A DAY', 540, 332, 86, '#ffd23a', INK, 0, 'Poppins', 700);
+  else { for (let i = 0; i < 5; i++) { rrect(ctx, 240 + i * 125, 260, 100, 140, 10); fillStroke(ctx, '#2f2b38', 5); const y = 330 + ((lt * 40 + i * .3) % 1) * 40 - 20; line(ctx, 260 + i * 125, y, 320 + i * 125, y, 10, '#ffd23a'); } }
+  goldenGrade(ctx);
+} });
+// 11 Fame (Golden): a generic late-night TV set with a rock on the guest chair; then a crooner sings to a rock under a spotlight
+SHOTS.push({ start: 30.80, end: 33.68, tr: 'fade', draw(ctx, lt, t) {
+  const song = at(32.24, 30.80);
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .03, r: 0 }, 1);
+  if (lt < song) { tvSet(ctx, t); rock(ctx, 740, 1110, .9, 4); for (let i = 0; i < 6; i++) { const ph = (lt * 1.2 + i / 6) % 1; ctx.save(); ctx.globalAlpha = 1 - ph; star5(ctx, 640 + Math.cos(i) * 260, 900 - ph * 200, 20, 0, '#ffd23a'); ctx.restore(); } }
+  else {
+    ctx.fillStyle = '#1a1424'; ctx.fillRect(-900, -900, 2900, 3200);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; path(ctx, [[460, -200], [620, -200], [900, 1600], [180, 1600]]); ctx.fillStyle = 'rgba(255,235,190,.18)'; ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#2a2034'; ctx.fillRect(-900, 1500, 2900, 1000);
+    rrect(ctx, 600, 1300, 260, 200, 10); fillStroke(ctx, '#3a2a4a', 7); rock(ctx, 730, 1290, .8, 4);
+    person(ctx, FRIENDS[0], { x: 330, y: 1880, s: 620, face: { eyes: 'closed', mouth: 'o' }, arms: { L: [.3, -.1], R: { ik: [.12, -.82] } } });
+    for (let i = 0; i < 3; i++) { const ph = ((lt - song) * .9 + i / 3) % 1; noteGlyph(ctx, 470 + ph * 200, 1100 - ph * 300, 1, 1 - ph); }
   }
-  // the pirate shows up at the edge
-  drawStick(ctx, C(YOU, { x: kf(lt, [[0, -250], [.7, 120]]), y: 1830, s: 700, face: { eyes: 'normal', mouth: 'grin', look: [1, 0], browAng: .3 }, arms: { L: [.4, -.2], R: [1.9, -.6] },
-    prop: (c, k, h, a, side) => { if (k === 'R') { c.save(); c.translate(h[0], h[1]); c.rotate(-side * 2.6); rrect(c, -.012, -.33, .024, .32, .01); fillStroke(c, '#d8dde6', .012); rrect(c, -.04, -.02, .08, .02, .01); fillStroke(c, '#e2b84a', .01); c.restore(); } } }));
-  if (panic) { for (const [x0, y0, jt] of crew) if (lt < jt - .2) sweat(ctx, x0 + 120, y0 - 470, 26, 1); }
-  if (lt > .25 && lt < .8) { text(ctx, '!', 230, 920, 120, '#ffe14d', INK, 14, 'Poppins', 700); text(ctx, '!', 860, 880, 120, '#ffe14d', INK, 14, 'Poppins', 700); }
+  goldenGrade(ctx);
 } });
-// E — you jump in after them
-SHOTS.push({ start: 10.6, end: 12.45, tr: 'cut', draw(ctx, lt, t) {
-  const hh = handheld(t, 4);
-  const cam = { x: 540 + hh[0], y: 1250 + hh[1] + kf(lt, [[.4, 0], [1.4, 120]]), z: kf(lt, [[0, 1.15], [1.85, 1.35]]), r: 0 };
-  deckBG(ctx, t, cam, { sun: [880, 160, 70], back: 860, wallH: 130, horizon: 640 });
-  applyCam(ctx, cam, 1);
-  drawMast(ctx, 920, -900, 920, 66); drawBarrel(ctx, 110, 1080, 1.0); drawBarrel(ctx, 230, 1120, 1.05);
-  const hatch = { cx: 540, cy: 1420, w: 420, h: 170 }; const g = drawHatch(ctx, hatch.cx, hatch.cy, hatch.w, hatch.h); hatch.front = g.front;
-  // you: run in from right, determined face, jump at 0.45
-  const jt = .62;
-  hatchFall(ctx, YOU, 980, 1650, jt, lt, hatch, { s: 560, face: lt < jt ? { eyes: 'normal', mouth: 'grin', browAng: .35, look: [-.6, .3] } : { eyes: 'wide', mouth: 'o', browUp: 1 }, flip: 1 });
-  if (lt > jt + .55) { const a = clamp((lt - jt - .55) * 3) * clamp((1.85 - lt) * 4); puff(ctx, 540, 1400, 90, t, '#e7d6bc', 9, a * .9); }
+// 12 Mystery (Day): a shopper holds a rock in one hand and four dollars in the other, puzzled
+SHOTS.push({ start: 33.68, end: 36.00, tr: 'fade', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.05 + lt * .04, r: 0 }, 1);
+  ctx.fillStyle = '#d9e8f0'; ctx.fillRect(-900, -900, 2900, 3200);
+  person(ctx, FRIENDS[3], { x: 540, y: 2000, s: 760, face: { eyes: 'normal', look: [Math.sin(lt * 3), -.4], mouth: 'flat', browOne: 1 }, arms: { L: { ik: [-.42, -.75] }, R: { ik: [.42, -.75] } } });
+  rock(ctx, 540 - .42 * 760, 2000 - .75 * 760 - 50, .7, 4);
+  ctx.save(); ctx.translate(540 + .42 * 760, 2000 - .75 * 760 - 40); for (let i = 0; i < 4; i++) { ctx.save(); ctx.rotate(-.3 + i * .2); rrect(ctx, -30, -130, 60, 130, 5); fillStroke(ctx, '#8fd09a', 4); ctx.restore(); } ctx.restore();
+  const q = backOut(clamp((lt - .5) * 3)); ctx.save(); ctx.translate(540, 560); ctx.scale(q, q); text(ctx, '?', 0, 0, 220, '#fff', INK, 16, 'Poppins', 700); ctx.restore();
 } });
-// F — black: only his eyes
-SHOTS.push({ start: 12.45, end: 13.9, tr: 'whip', draw(ctx, lt, t) {
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#050407'; ctx.fillRect(0, 0, W, H);
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0], y: 960 + hh[1], z: 1 + lt * .06, r: 0 };
-  applyCam(ctx, cam, 1);
-  const look = kf(lt, [[0, [0, 0]], [.25, [-1, 0]], [.6, [-1, 0]], [.75, [1, 0]], [1.1, [1, 0]], [1.25, [0, .2]]], ease);
-  const blink = (lt > .1 && lt < .2) || (lt > 1.3 && lt < 1.4) ? 1 : 0;
-  drawStick(ctx, C(YOU, { x: 540, y: 960 + .765 * 2400, s: 2400, sil: '#09070b', eyesGlow: true, face: { eyes: 'normal', look, blink, pupil: .25 }, shadow: false }));
-  const sa = clamp((lt - .5) * 3); sweat(ctx, 540 + 330, 760 + (lt - .5) * 50, 50, sa * .9);
+// 13 You see (Golden): under a Christmas tree, a wrapped gift opens to reveal a rock on straw; the whole family cracks up
+SHOTS.push({ start: 36.00, end: 40.56, tr: 'fade', draw(ctx, lt, t) {
+  const open = at(38.2, 36.0), laugh = at(38.8, 36.0);
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .02, r: 0 }, 1);
+  ctx.fillStyle = '#7a3a2a'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#5a2a1e'; ctx.fillRect(-900, 1350, 2900, 1600); line(ctx, -900, 1350, 2000, 1350, 8, INK);
+  for (let k = 0; k < 4; k++) { const w = 380 - k * 80, y = 1250 - k * 220; path(ctx, [[540 - w, y], [540 + w, y], [540, y - 300]]); fillStroke(ctx, '#2f7a3e', 8); }
+  star5(ctx, 540, 360, 60, 0, '#ffd23a');
+  for (let i = 0; i < 10; i++) { circle(ctx, 300 + (i * 97 % 480), 600 + (i * 131 % 600), 16); fillStroke(ctx, ['#e0392f', '#ffd23a', '#2f63c9'][i % 3], 4); glowAt(ctx, 300 + (i * 97 % 480), 600 + (i * 131 % 600), 50, '255,220,140', .3 + .2 * Math.sin(t * 3 + i)); }
+  const o = clamp((lt - open) * 2.5);
+  petBox(ctx, 540, 1430, .75, { open: o, inside: true, noLabel: true });
+  if (o < 1) { ctx.save(); ctx.globalAlpha = 1 - o; rrect(ctx, 540 - 170, 1430 - 185, 340, 190, 8); ctx.fillStyle = '#c22a2a'; ctx.fill(); line(ctx, 540, 1245, 540, 1430, 22, '#ffd23a'); ctx.restore(); }
+  const l = lt > laugh;
+  for (const [i, x, s, f] of [[0, 160, 520, 1], [1, 930, 520, -1], [3, 760, 380, -1]]) { const bob = l ? Math.abs(Math.sin(lt * 14 + i)) * .02 : 0; person(ctx, FRIENDS[i], { x, y: 1920, s, flip: f, bob: -bob, face: { eyes: l ? 'happy' : 'normal', look: [f * .7, .3], mouth: l ? 'grin' : 'smile' }, arms: l ? { L: { ik: [-.05, -.45] }, R: { ik: [.05, -.45] } } : POSE.idle.arms }); }
+  goldenGrade(ctx);
 } });
-// G — explainer: pupil + 25 minutes
-SHOTS.push({ start: 13.9, end: 18.45, tr: 'cut', draw(ctx, lt, t) {
-  const dark = kf(lt, [[1.45, 0], [2.0, 1]]);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const g = ctx.createRadialGradient(540, 900, 50, 540, 900, 1300);
-  g.addColorStop(0, mix('#fff2b0', '#1d2a55', dark)); g.addColorStop(.5, mix('#ffc94d', '#121a3a', dark)); g.addColorStop(1, mix('#f08a2a', '#070a18', dark));
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // rays in sun phase
-  if (dark < 1) { ctx.save(); ctx.globalAlpha = 1 - dark; ctx.translate(540, 980); ctx.rotate(t * .2); for (let i = 0; i < 16; i++) { ctx.rotate(TAU / 16); path(ctx, [[-60, 300], [60, 300], [0, 1500]]); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill(); } ctx.restore(); }
-  else { const R = rng(3); for (let i = 0; i < 40; i++) { circle(ctx, R() * W, R() * 1300, 2 + R() * 3); ctx.fillStyle = `rgba(200,220,255,${.3 + .3 * Math.sin(t * 3 + i)})`; ctx.fill(); } }
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0], y: 960 + hh[1], z: kf(lt, [[0, 1.12], [.5, 1.0, easeOut], [4.5, 1.06]]), r: 0 };
-  applyCam(ctx, cam, 1);
-  // big eye
-  const ex = 540, ey = 1010, rx = 360, ry = 250;
-  const lid = kf(lt, [[0, .45], [1.6, .45], [2.1, .05]]);
-  const eyeShape = () => { ctx.beginPath(); ctx.moveTo(ex - rx, ey); ctx.quadraticCurveTo(ex, ey - ry * 1.55 * (1 - lid * .6), ex + rx, ey); ctx.quadraticCurveTo(ex, ey + ry * 1.55 * (1 - lid * .4), ex - rx, ey); ctx.closePath(); };
-  eyeShape(); fillStroke(ctx, '#fbf8f2', 12);
-  ctx.save(); eyeShape(); ctx.clip();
-  ellipse(ctx, ex, ey + 40, rx, ry, 0); ctx.fillStyle = 'rgba(150,140,170,.15)';
-  const ir = 190;
-  circle(ctx, ex, ey, ir); fillStroke(ctx, '#3e9bb0', 10);
-  ctx.strokeStyle = 'rgba(20,70,90,.5)'; ctx.lineWidth = 6; for (let i = 0; i < 28; i++) { const a = i / 28 * TAU; line(ctx, ex + Math.cos(a) * 60, ey + Math.sin(a) * 60, ex + Math.cos(a) * 175, ey + Math.sin(a) * 175, 5, 'rgba(20,70,90,.45)'); }
-  circle(ctx, ex, ey, ir * .98); ctx.lineWidth = 16; ctx.strokeStyle = 'rgba(20,50,70,.35)'; ctx.stroke();
-  const pr = lt < 1.9 ? 34 + Math.sin(t * 12) * 2 : lerp(34, 150, easeOut(clamp((lt - 1.9) / 2.4)));
-  circle(ctx, ex, ey, pr); ctx.fillStyle = '#0d0b12'; ctx.fill();
-  circle(ctx, ex - 70, ey - 70, 34); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
-  circle(ctx, ex + 50, ey + 60, 14); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill();
-  // lid shadow
-  ctx.fillStyle = 'rgba(80,60,90,.18)'; ctx.fillRect(ex - rx, ey - ry * 2, rx * 2, ry * .9 + lid * 150);
-  ctx.restore();
-  eyeShape(); fillStroke(ctx, null, 12);
-  // lashes
-  for (let i = 0; i < 5; i++) { const k = (i + 1) / 6; const lx = lerp(ex - rx, ex + rx, k); const ly = ey - ry * 1.55 * (1 - lid * .6) * (1 - Math.pow(2 * k - 1, 2)) * .5 - 4; line(ctx, lx, ly, lx + (k - .5) * 50, ly - 50, 12); }
-  // pupil arrows in dark phase
-  if (lt > 2.0 && lt < 4.2) { const a = clamp((lt - 2) * 3) * clamp((4.2 - lt) * 3); ctx.save(); ctx.globalAlpha = a; for (const sd of [-1, 1]) { const ax = ex + sd * (pr + 40); line(ctx, ax, ey, ax + sd * 70, ey, 10, '#ffe14d'); path(ctx, [[ax + sd * 95, ey], [ax + sd * 60, ey - 25], [ax + sd * 60, ey + 25]]); fillStroke(ctx, '#ffe14d', 0); } ctx.restore(); }
-  // sun icon / pocket watch
-  const cx = 540, cy = 470, cr = 165;
-  const watchIn = kf(lt, [[1.7, 0], [2.1, 1, backOut]]);
-  const sunIn = 1 - kf(lt, [[1.4, 0], [1.7, 1]]);
-  if (sunIn > 0) { ctx.save(); ctx.translate(cx, cy); ctx.scale(sunIn, sunIn); circle(ctx, 0, 0, 110); fillStroke(ctx, '#fff3a6', 12); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU + t; line(ctx, Math.cos(a) * 140, Math.sin(a) * 140, Math.cos(a) * 190, Math.sin(a) * 190, 14, INK); line(ctx, Math.cos(a) * 140, Math.sin(a) * 140, Math.cos(a) * 190, Math.sin(a) * 190, 6, '#fff3a6'); } ctx.restore(); }
-  if (watchIn > 0) {
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(watchIn, watchIn); ctx.rotate(Math.sin(t * 3) * .04);
-    circle(ctx, 0, -cr - 24, 28); fillStroke(ctx, '#e8c04a', 10); rrect(ctx, -22, -cr - 14, 44, 26, 6); fillStroke(ctx, '#e8c04a', 8);
-    circle(ctx, 0, 0, cr); fillStroke(ctx, '#e8c04a', 12); circle(ctx, 0, 0, cr * .84); fillStroke(ctx, '#fbf6e8', 8);
-    // filled wedge of elapsed time
-    const el = easeOut(clamp((lt - 2.0) / .9)) * 25 / 60;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, cr * .78, -Math.PI / 2, -Math.PI / 2 + el * TAU); ctx.closePath(); ctx.fillStyle = 'rgba(70,120,230,.35)'; ctx.fill();
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; line(ctx, Math.sin(a) * cr * .7, -Math.cos(a) * cr * .7, Math.sin(a) * cr * .78, -Math.cos(a) * cr * .78, 7); }
-    const ma = -Math.PI / 2 + el * TAU; line(ctx, 0, 0, Math.cos(ma) * cr * .66, Math.sin(ma) * cr * .66, 12);
-    line(ctx, 0, 0, Math.cos(-Math.PI / 2 + el * TAU / 12) * cr * .4, Math.sin(-Math.PI / 2 + el * TAU / 12) * cr * .4, 14);
-    circle(ctx, 0, 0, 14); ctx.fillStyle = INK; ctx.fill();
-    ctx.restore();
-    const n = Math.round(easeOut(clamp((lt - 2.0) / .9)) * 25);
-    const pop = 1 + .25 * Math.max(0, 1 - Math.abs(lt - 2.9) * 6);
-    ctx.save(); ctx.translate(cx + 270, cy + 40); ctx.scale(pop * watchIn, pop * watchIn); ctx.rotate(.06);
-    text(ctx, `${n} MIN`, 0, 0, 92, '#ffe14d', INK, 18, 'Poppins', 700); ctx.restore();
+// 14 Total (Day): a tally board shows 1.5 MILLION as each box drops 95¢ into a jar
+SHOTS.push({ start: 40.56, end: 44.80, tr: 'fade', draw(ctx, lt, t) {
+  const board = at(42.6, 40.56), cents = at(43.2, 40.56);
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.0 + lt * .02, r: 0 }, 1);
+  ctx.fillStyle = '#d9e8f0'; ctx.fillRect(-900, -900, 2900, 3200);
+  rrect(ctx, 140, 220, 800, 240, 20); fillStroke(ctx, '#1d1a22', 9);
+  if (lt > board) { const b = backOut(clamp((lt - board) * 4)); ctx.save(); ctx.translate(540, 340); ctx.scale(b, b); text(ctx, '1.5 MILLION', 0, 0, 110, '#ffd23a', INK, 0, 'Poppins', 700); ctx.restore(); }
+  rrect(ctx, 400, 780, 280, 380, 40); ctx.fillStyle = 'rgba(200,230,240,.55)'; ctx.fill(); ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.stroke(); rrect(ctx, 380, 760, 320, 40, 12); fillStroke(ctx, '#b9b2a8', 7);
+  const n = Math.floor(lt * 3); for (let i = 0; i < Math.min(n, 12); i++) { circle(ctx, 450 + (i % 4) * 60, 1130 - Math.floor(i / 4) * 40, 26); fillStroke(ctx, GOLDC, 5); }
+  for (let i = 0; i < 3; i++) { const ph = (lt * .9 + i / 3) % 1; const bx = lerp(-150, 540, Math.min(1, ph * 1.6)); petBox(ctx, bx, 620, .38, {}); if (ph > .55) { const k = (ph - .55) / .45; ctx.save(); ctx.translate(540, lerp(640, 1060, k)); circle(ctx, 0, 0, 34); fillStroke(ctx, GOLDC, 6); if (lt > cents) text(ctx, '95¢', 0, 2, 26, '#5a3a14', INK, 0, 'Poppins', 700); ctx.restore(); } }
+} });
+// 15 Fall (Day): a February calendar; unsold boxes pile up; two investors in suits wave legal papers
+SHOTS.push({ start: 44.80, end: 48.48, tr: 'fade', draw(ctx, lt, t) {
+  const inv = at(46.9, 44.8);
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .025, r: 0 }, 1);
+  ctx.fillStyle = '#c9ced4'; ctx.fillRect(-900, -900, 2900, 3200); ctx.fillStyle = '#8a8f96'; ctx.fillRect(-900, 1400, 2900, 1600); line(ctx, -900, 1400, 2000, 1400, 8, INK);
+  if (lt < inv) { calendarPage(ctx, 540, 640, .9, 'FEBRUARY', '1976'); for (let i = 0; i < 9; i++) { const k = clamp(lt * 3 - i * .25); if (k > 0) petBox(ctx, 160 + (i % 5) * 190, 1400 - Math.floor(i / 5) * 105 - (1 - k) * 400, .42, {}); } }
+  else {
+    for (let i = 0; i < 9; i++) petBox(ctx, 160 + (i % 5) * 190, 1400 - Math.floor(i / 5) * 105, .42, {});
+    for (const [x, f] of [[300, 1], [790, -1]]) { const wave = Math.sin((lt - inv) * 10) * .1; person(ctx, INVESTOR, { x, y: 1880, s: 560, flip: f, face: { eyes: 'half', mouth: 'frown', browAng: .35 }, arms: { L: [.3, -.1], R: { ik: [.3 + wave, -1.0] } } }); ctx.save(); ctx.translate(x + f * .3 * 560, 1880 - 1.0 * 560 - 70); ctx.rotate(wave * 3); rrect(ctx, -55, -75, 110, 150, 4); fillStroke(ctx, '#f6f2ea', 5); for (let k = 0; k < 4; k++) line(ctx, -35, -45 + k * 25, 35, -45 + k * 25, 4, '#b9b2a8'); ctx.restore(); }
   }
 } });
-// H — smacked in the dark
-SHOTS.push({ start: 18.45, end: 21.65, tr: 'whip', draw(ctx, lt, t) {
-  const hit1 = 1.36, hit2 = 2.5;
-  const sh1 = Math.max(0, 1 - (lt - hit1) * 4) * (lt > hit1 ? 1 : 0), sh2 = Math.max(0, 1 - (lt - hit2) * 4) * (lt > hit2 ? 1 : 0);
-  const hk = shake(t * 3, 30 * (sh1 + sh2), 3);
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0] + hk[0], y: 1080 + hh[1] + hk[1], z: kf(lt, [[0, 1.45], [3.2, 1.62]]), r: (sh1 - sh2) * .03 };
-  applyCam(ctx, cam, 1);
-  drawBelowDeck(ctx, .965); ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle = 'rgba(20,30,70,.25)'; ctx.fillRect(0,0,W,H); ctx.restore();
-  const flash = Math.max(0, 1 - (lt - hit1) * 6) * (lt > hit1 ? 1 : 0) + Math.max(0, 1 - (lt - hit2) * 6) * (lt > hit2 ? 1 : 0);
-  const silC = mix('#0c0a0e', '#5a4636', flash * .8);
-  // sneaking sailors
-  const s1 = kf(lt, [[0, -60], [1.0, 250]]), s2 = kf(lt, [[1.4, 1150], [2.3, 830]]);
-  const swing1 = kf(lt, [[1.0, 2.9], [1.22, 2.95], [hit1, 1.25, easeIn], [hit1 + .3, 1.1]]);
-  const swing2 = kf(lt, [[2.1, 2.9], [2.35, 2.95], [hit2, 1.25, easeIn], [hit2 + .3, 1.1]]);
-  const pan = (sw) => (c, k, h, a, side) => { if (k === 'R') drawPan(c, h[0], h[1], .0017, side * (Math.PI - a), .9 - flash * .4); };
-  drawStick(ctx, C(SAILOR, { x: s1, y: 1600, s: 620, sil: silC, eyesGlow: false, arms: { L: [.4, -.2], R: [swing1, -.2] }, propBehind: pan(swing1) }));
-  drawStick(ctx, C(SAILOR, { x: s2, y: 1600, s: 620, flip: -1, sil: silC, eyesGlow: false, arms: { L: [.4, -.2], R: [swing2, -.2] }, propBehind: pan(swing2) }));
-  // our hero (only eyes)
-  const dazed = lt > hit2 ? 'spiral' : lt > hit1 ? 'x' : 'normal';
-  const look = kf(lt, [[0, [0, 0]], [.4, [.9, 0]], [.8, [-.9, 0]], [1.2, [0, 0]]]);
-  const tilt = lt > hit2 ? Math.sin(t * 5) * .2 : lt > hit1 ? .25 : 0;
-  drawStick(ctx, C(YOU, { x: 540, y: 1620, s: 700, sil: silC, eyesGlow: true, headTilt: tilt, face: { eyes: dazed, look, pupil: .3, t }, arms: { L: [.5, -.4], R: [.5, -.4] } }));
-  // impacts
-  for (const [ht, bx] of [[hit1, 345], [hit2, 735]]) {
-    const k = lt - ht; if (k > 0 && k < .5) { const sc = backOut(clamp(k / .12)) * (1 - clamp((k - .3) / .2)); ctx.save(); ctx.translate(bx, 860); ctx.scale(sc * .62, sc * .62); burst(ctx, 0, 0, 230, 12, '#ffd23a', 7 + ht * 10); burst(ctx, 0, 0, 120, 10, '#fff6c4', 9); text(ctx, 'BONK!', 0, 0, 96, '#e0392f', INK, 16, 'Poppins', 700); ctx.restore(); }
-  }
-  if (lt > hit2 + .1) { for (let i = 0; i < 3; i++) { const a = t * 5 + i * TAU / 3; star5(ctx, 540 + Math.cos(a) * 190, 960 + Math.sin(a) * 45, 32, t * 3, '#ffe14d'); } }
-  if (flash > 0) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = `rgba(255,240,200,${flash * .35})`; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+// 16 Millionaire (Golden): Gary leans back on a pile of cash, smiling
+SHOTS.push({ start: 48.48, end: 49.92, tr: 'fade', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 1000 + hh[1], z: 1.0 + lt * .04, r: 0 }, 1);
+  ctx.fillStyle = '#e8c8a0'; ctx.fillRect(-900, -900, 2900, 3200);
+  cashPile(ctx, 540, 1500, 1.4);
+  ctx.save(); ctx.translate(540, 1220); ctx.rotate(-.5); person(ctx, GARY, { x: 0, y: 0, s: 620, shadow: false, face: { eyes: 'happy', mouth: 'grin' }, arms: { L: [2.6, .3], R: [2.6, .3] }, legs: { L: [1.2, -.6], R: [1.0, -.4] } }); ctx.restore();
+  for (let i = 0; i < 5; i++) { const ph = (lt * .8 + i / 5) % 1; ctx.save(); ctx.translate(150 + i * 190, -100 + ph * 1500); ctx.rotate(ph * 6 + i); rrect(ctx, -50, -22, 100, 44, 4); fillStroke(ctx, '#8fd09a', 4); ctx.restore(); }
+  goldenGrade(ctx);
 } });
-// I — buddy drops in, flips the patch
-SHOTS.push({ start: 21.65, end: 25.1, tr: 'cut', draw(ctx, lt, t) {
-  const land = .55;
-  const hh = handheld(t, 3);
-  const flipT = 1.92;
-  const cam = { x: 540 + hh[0], y: kf(lt, [[0, 1000], [1.2, 1080]]) + hh[1], z: kf(lt, [[0, 1.0], [1.25, 1.75], [3.45, 1.95]]), r: 0 };
-  applyCam(ctx, cam, 1);
-  drawBelowDeck(ctx, .9);
-  drawBarrel(ctx, 140, 1420, 1.3, .85); drawCrate(ctx, 930, 1430, 260, 220, .85);
-  lightShaft(ctx, 540, -100, 380, 700, 1700, 1.3);
-  const y = lt < land ? kf(lt, [[0, 300], [land, 1450, easeIn]]) : 1450;
-  const sq = lt < land ? 1.05 : kf(lt, [[land, .85], [land + .25, 1, backOut]]);
-  const pos = kf(lt, [[flipT, -1], [flipT + .3, 1, backOut]]);
-  const reach = kf(lt, [[flipT - .3, 0], [flipT, 1], [flipT + .35, 1], [flipT + .6, 0]]);
-  const handT = [lerp(-.3, lerp(-.09, .09, clamp((pos + 1) / 2)), reach), lerp(-.42, -.8, reach)];
-  drawStick(ctx, C(PATCH, {
-    x: 540, y, s: 620, squash: sq, patch: { pos, lift: 0 }, armLen: 1.2,
-    arms: lt < land ? { L: [2.7, .2], R: [2.7, .2] } : { L: reach > 0 ? { ik: handT, bend: -1 } : [.3, -.1], R: [.9, -2.1] },
-    legs: lt < land ? { L: [.15, -.3], R: [.15, -.3] } : { L: [.18, -.05], R: [.18, -.05] },
-    face: { eyes: 'normal', pupil: lt > flipT ? .82 : .45, mouth: lt > flipT + .2 ? 'grin' : 'smirk', browAng: .25, look: [0, 0] },
-  }));
-  // shine on revealed eye
-  const ga = kf(lt, [[flipT + .15, 0], [flipT + .3, 1], [flipT + .9, 0]]);
-  sparkle(ctx, 540 - .072 * 620 - 30, 1450 - .77 * 620 - 40, 60 * ga, ga);
-  
+// 17 Debate moment (Day): split screen — a lightbulb labelled GENIUS and a horseshoe labelled LUCK, with the rock between them
+SHOTS.push({ start: 49.92, end: 53.04, tr: 'fade', draw(ctx, lt, t) {
+  const hh = handheld(t, 2); applyCam(ctx, { x: 540 + hh[0], y: 960 + hh[1], z: 1.0 + lt * .02, r: 0 }, 1);
+  ctx.fillStyle = '#2f63c9'; ctx.fillRect(-900, -900, 1440, 3200); ctx.fillStyle = '#3fa35b'; ctx.fillRect(540, -900, 1500, 3200); line(ctx, 540, -900, 540, 2200, 10, INK);
+  const g = backOut(clamp((lt - at(50.4, 49.92)) * 3)), l = backOut(clamp((lt - at(51.7, 49.92)) * 3));
+  ctx.save(); ctx.translate(270, 700); ctx.scale(g, g); bulb(ctx, 0, 0, 1.1, 1); text(ctx, 'GENIUS', 0, 220, 70, '#fff', INK, 10, 'Poppins', 700); ctx.restore();
+  ctx.save(); ctx.translate(810, 700); ctx.scale(l, l); horseshoe(ctx, 0, 0, 1.1); text(ctx, 'LUCK', 0, 220, 70, '#fff', INK, 10, 'Poppins', 700); ctx.restore();
+  rock(ctx, 540, 1110 + Math.sin(t * 2) * 8, 1.0, 4);
 } });
-// J — he can see everything
-SHOTS.push({ start: 25.1, end: 28.95, tr: 'whip', draw(ctx, lt, t) {
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0] + lt * 8, y: 1000 + hh[1], z: kf(lt, [[0, 1.08], [3.85, 1.0]]), r: 0 };
-  applyCam(ctx, cam, 1);
-  drawBelowDeck(ctx, .25);
-  drawLantern(ctx, 300, 300, 1.1, 0, t);
-  drawCrate(ctx, 120, 1450, 260, 230, .1, 'RUM');
-  const seen = lt > 2.95;
-  const sf = seen ? { eyes: 'wide', mouth: 'teeth', browUp: 1, browAng: -.3 } : { eyes: 'normal', mouth: 'smirk', browAng: .3, look: [-.4, 0] };
-  const sx = [[340, 1380], [700, 1360], [940, 1420]];
-  sx.forEach(([x, y], i) => {
-    const pop = seen ? kf(lt, [[2.95, 0], [3.1, 60]], easeOut) : 0;
-    drawStick(ctx, C(SAILOR, { x, y: y - pop, s: 520, face: sf, arms: seen ? POSE.handsUp.arms : { L: [.4, -.3], R: [2.6, .3] }, propBehind: (c, k, h, a, side) => { if (k === 'R') drawPan(c, h[0], h[1], .0017, side * (Math.PI - a), 0); } }));
-  });
-  drawBarrel(ctx, 300, 1640, 1.55); drawBarrel(ctx, 700, 1640, 1.55); drawBarrel(ctx, 1000, 1690, 1.5);
-  // knocked out hero on the floor
-  ctx.save(); ctx.translate(560, 1850); ctx.rotate(-Math.PI / 2 + .1);
-  drawStick(ctx, C(YOU, { x: 0, y: 0, s: 420, shadow: false, face: { eyes: 'spiral', mouth: 'o', t }, arms: { L: [1.4, .3], R: [1.6, .2] }, legs: { L: [.4, 0], R: [.2, 0] } }));
-  ctx.restore();
-  if (seen) { const sa = clamp((lt - 3.0) * 4); [[340, 1380], [700, 1360], [940, 1420]].forEach(([x, y]) => sweat(ctx, x + 110, y - 470, 26, sa)); }
-  // dark-adapted vision reveal
-  const r = kf(lt, [[.25, 0], [3.0, 1500, easeIn]]);
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = mix('#ffffff', '#8ba6d6', clamp(1 - (lt - 3.1) * 2)); ctx.fillRect(0, 0, W, H);
-  ctx.globalCompositeOperation = 'source-over';
-  const g = ctx.createRadialGradient(540, 1000, Math.max(1, r), 540, 1000, r + 260);
-  g.addColorStop(0, 'rgba(5,4,7,0)'); g.addColorStop(1, 'rgba(5,4,7,.96)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // iris ring
-  if (r > 10 && r < 1400) { circle(ctx, 540, 1000, r + 20); ctx.lineWidth = 10; ctx.strokeStyle = `rgba(120,200,255,${.35 * (1 - r / 1400)})`; ctx.stroke(); }
-  ctx.restore();
-} });
-// K — tested: plausible stamp
-SHOTS.push({ start: 28.95, end: 32.25, tr: 'whip', draw(ctx, lt, t) {
-  const st = 2.6; const k = lt - st;
-  const sh = k > 0 ? Math.max(0, 1 - k * 3.5) : 0; const hk = shake(t * 3, 26 * sh, 3);
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0] + hk[0], y: 960 + hh[1] + hk[1], z: kf(lt, [[0, 1.08], [3.3, 1.0]]), r: -.02 + lt * .006 };
-  applyCam(ctx, cam, 1);
-  // table
-  ctx.fillStyle = '#7a4527'; ctx.fillRect(-500, -500, 2100, 2900);
-  for (let y = -500; y < 2400; y += 190) { line(ctx, -500, y, 1600, y + 20, 6, '#5e321b'); }
-  // paper
-  ctx.save(); ctx.translate(540, 850); ctx.rotate(-.04); ctx.scale(.92, .92);
-  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-400, -560, 820, 1140);
-  rrect(ctx, -420, -580, 820, 1140, 14); fillStroke(ctx, '#f5ead2', 8);
-  text(ctx, 'EYE PATCH', 0, -470, 104, '#4a2614', null, 0, 'Lora', 700);
-  text(ctx, 'THEORY', 0, -360, 104, '#4a2614', null, 0, 'Lora', 700);
-  line(ctx, -300, -290, 300, -290, 6, '#4a2614');
-  // doodle head with patch
-  ctx.save(); ctx.translate(-10, -60); circle(ctx, 0, 0, 120); fillStroke(ctx, '#fffaf0', 8); ellipse(ctx, -45, -5, 34, 30); ctx.fillStyle = '#2a2026'; ctx.fill(); line(ctx, -120, -40, 120, -50, 6, '#2a2026'); circle(ctx, 45, -5, 26); fillStroke(ctx, '#fff', 6); circle(ctx, 45, -5, 16); ctx.fillStyle = '#2a2026'; ctx.fill(); ctx.beginPath(); ctx.arc(0, 50, 34, .3, Math.PI - .3); ctx.lineWidth = 7; ctx.strokeStyle = '#2a2026'; ctx.stroke(); ctx.restore();
-  const items = ['Patch on in the sun', 'Run into the dark', 'Flip the patch'];
-  items.forEach((s, i) => {
-    const y = 170 + i * 110; rrect(ctx, -330, y - 32, 64, 64, 8); fillStroke(ctx, '#fffaf0', 6);
-    text(ctx, s, -235, y, 54, '#4a2614', null, 0, 'Lora', 600, 'left');
-    const ck = kf(lt, [[.9 + i * .35, 0], [1.1 + i * .35, 1, backOut]]);
-    if (ck > 0) { ctx.save(); ctx.translate(-298, y); ctx.scale(ck, ck); ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(-6, 22); ctx.lineTo(34, -34); ctx.lineWidth = 14; ctx.strokeStyle = '#2f9a4a'; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore(); }
-  });
-  // stamp ink
-  if (k > 0) {
-    ctx.save(); ctx.translate(20, -20); ctx.rotate(-.22);
-    const sc = k < .08 ? 1.15 - k : 1;
-    ctx.scale(sc, sc);
-    ctx.globalAlpha = .92;
-    rrect(ctx, -380, -105, 760, 210, 24); ctx.lineWidth = 22; ctx.strokeStyle = '#d42a2a'; ctx.stroke();
-    rrect(ctx, -350, -78, 700, 156, 14); ctx.lineWidth = 7; ctx.stroke();
-    text(ctx, 'PLAUSIBLE', 0, 8, 128, '#d42a2a', null, 0, 'Poppins', 700);
-    // rough ink texture
-    ctx.globalCompositeOperation = 'destination-out'; const R = rng(77);
-    for (let i = 0; i < 70; i++) { circle(ctx, -380 + R() * 760, -105 + R() * 210, 1.5 + R() * 3.5); ctx.fill(); }
-    ctx.restore();
-  }
-  ctx.restore();
-  // the stamp tool + arm
-  const sy = k < 0 ? kf(lt, [[st - .55, -700], [st - .2, -160], [st, 540, easeIn]]) : kf(k, [[0, 540], [.12, 540], [.5, -900, easeIn]]);
-  const sx = 560; const sy0 = -130;
-  ctx.save(); ctx.translate(sx, sy + sy0); ctx.rotate(-.22);
-  line(ctx, 60, -330, 300, -1400, 30, INK); circle(ctx, 40, -300, 40); ctx.fillStyle = INK; ctx.fill();
-  rrect(ctx, -40, -330, 80, 200, 30); fillStroke(ctx, '#9a5a2a', 8);
-  rrect(ctx, -240, -140, 480, 90, 16); fillStroke(ctx, '#b8733a', 8);
-  rrect(ctx, -250, -60, 500, 60, 10); fillStroke(ctx, '#c03030', 8);
-  ctx.restore();
-  if (k > 0 && k < .6) { const a = 1 - k / .6; puff(ctx, 140, 1000, 90 + k * 160, t, '#f2e6cc', 21, a); puff(ctx, 980, 700, 80 + k * 160, t, '#f2e6cc', 22, a); }
-} });
-// L — finale: only one who could see
-SHOTS.push({ start: 32.25, end: 37.4, tr: 'cut', draw(ctx, lt, t) {
-  const hh = handheld(t, 3);
-  const cam = { x: 540 + hh[0], y: kf(lt, [[0, 1000], [2.4, 1170]]) + hh[1], z: kf(lt, [[0, 1.6], [2.4, 1.0], [5.2, 1.05]]), r: 0 };
-  applyCam(ctx, cam, 1);
-  drawBelowDeck(ctx, .55);
-  drawBarrel(ctx, 70, 1360, 1.2, .35); drawCrate(ctx, 1040, 1350, 220, 190, .35, 'RUM');
-  // tied sailors bundle (right)
-  for (const [x, i] of [[720, 0], [835, 1], [950, 2]]) {
-    drawStick(ctx, C(SAILOR, { x, y: 1560, s: 400, face: { eyes: i === 1 ? 'half' : 'normal', mouth: 'frown', browAng: -.3, look: [-.8, 0] }, legs: { L: [1.5, -.2], R: [1.3, -.2] }, arms: { L: [.15, 0], R: [.15, 0] }, squash: .82 }));
-  }
-  rrect(ctx, 630, 1350, 420, 30, 14); fillStroke(ctx, '#c79a5a', 6); rrect(ctx, 630, 1405, 420, 28, 14); fillStroke(ctx, '#c79a5a', 6);
-
-  // chest + patch hero
-  drawChest(ctx, 480, 1480, 1.15, 1);
-  // hero on the floor, dazed (left)
-  ctx.save(); ctx.translate(40, 1720); ctx.rotate(Math.PI / 2 - .08);
-  drawStick(ctx, C(YOU, { x: 0, y: 0, s: 380, flip: -1, shadow: false, face: { eyes: 'spiral', mouth: 'o', t }, arms: { L: [1.4, .3], R: [1.7, .2] }, legs: { L: [.4, 0], R: [.25, 0] } }));
-  ctx.restore();
-  for (let i = 0; i < 3; i++) { const a = t * 4 + i * TAU / 3; star5(ctx, 330 + Math.cos(a) * 80, 1700 + Math.sin(a) * 22, 22, t * 3); }
-  const wink = lt > 3.9 && lt < 4.6;
-  const handPatch = kf(lt, [[2.9, 0], [3.2, 1], [3.6, 1], [3.9, 0]]);
-  drawStick(ctx, C(PATCH, {
-    x: 480, y: 1310, s: 560, patch: { pos: 1, lift: 0 }, armLen: 1.2,
-    arms: { L: handPatch > 0 ? { ik: [lerp(-.3, .05, handPatch), lerp(-.3, -.8, handPatch)], bend: -1 } : [.9, -2.1], R: [2.6, .25] },
-    prop: (c, k, h) => { if (k === 'R') drawLantern(c, h[0], h[1] + .08, .0019, 1, t); },
-    face: { eyes: 'normal', eyesL: wink ? 'happy' : undefined, pupil: .75, mouth: 'grin', browAng: .2, browOne: -1 },
-    headTilt: Math.sin(t * 2) * .04,
-  }));
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(600, 720, 20, 600, 720, 950); g.addColorStop(0, 'rgba(255,170,70,.32)'); g.addColorStop(1, 'rgba(255,120,40,0)'); ctx.fillStyle = g; ctx.fillRect(-400, -200, 1900, 2400); ctx.restore();
-  const sa = kf(lt, [[3.9, 0], [4.05, 1], [4.6, 0]]);
-  sparkle(ctx, 480 - .072 * 560 - 40, 1310 - .77 * 560 - 50, 55 * sa, sa);
-} });
+// 18 Callback (Golden): waves over a beach of ordinary rocks; the camera settles on one rock, matching the first frame
+SHOTS.push({ start: 53.04, end: END, tr: 'cut', draw(ctx, lt, t) { beachSettle(ctx, t - END, t); } });
